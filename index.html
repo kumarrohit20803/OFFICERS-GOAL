@@ -838,7 +838,7 @@ alter publication supabase_realtime add table streak_reasons;</pre>
     async function loadSharedData(seedLocalIfEmpty = true) {
       const result = await sharedApi('get');
       const payload = result.payload || {};
-      const hasRemoteData = Object.values(payload).some(value => Array.isArray(value) && value.length > 0);
+      const hasRemoteData = !!result.updated_at || Object.values(payload).some(value => Array.isArray(value) && value.length > 0);
       if (!hasRemoteData && seedLocalIfEmpty) {
         await sharedApi('save', { payload: appData });
       } else {
