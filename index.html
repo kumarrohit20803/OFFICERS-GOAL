@@ -2894,7 +2894,15 @@ alter publication supabase_realtime add table streak_reasons;</pre>
       }
     });
 
-    document.getElementById('lockBtn').addEventListener('click', () => {
+    document.getElementById('lockBtn').addEventListener('click', async () => {
+      // Explicitly locking the app ends this browser's session.
+      try {
+        if (sharedSessionToken) await sharedApi('logout');
+      } catch (error) {
+        console.warn('Could not revoke session remotely:', error.message);
+      }
+      sharedSessionToken = '';
+      localStorage.removeItem(SHARED_TOKEN_KEY);
       appScreen.classList.add('hidden');
       appScreen.classList.remove('flex');
       loginScreen.classList.remove('hidden');
@@ -2902,6 +2910,33 @@ alter publication supabase_realtime add table streak_reasons;</pre>
       passwordInput.value = '';
       passwordInput.focus();
     });
+
+    // Restore the existing session after refresh instead of asking for the password again.
+    (async function restoreSharedSession() {
+      if (!sharedSessionToken) return;
+      const submitButton = loginForm.querySelector('button[type="submit"]');
+      submitButton.disabled = true;
+      submitButton.textContent = 'Restoring session...';
+      try {
+        await loadSharedData(false); // validates the saved token and fetches the latest cloud data
+        loginError.classList.add('hidden');
+        loginScreen.classList.add('hidden');
+        appScreen.classList.remove('hidden');
+        appScreen.classList.add('flex');
+        switchView('dashboard');
+      } catch (error) {
+        // Expired/revoked sessions must return to the login screen.
+        sharedSessionToken = '';
+        localStorage.removeItem(SHARED_TOKEN_KEY);
+        setSharedSyncStatus(false, error.message);
+        loginScreen.classList.remove('hidden');
+        appScreen.classList.add('hidden');
+        appScreen.classList.remove('flex');
+      } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = 'Log In';
+      }
+    })();
 
     document.getElementById('syncNowBtn').addEventListener('click', async () => {
       await refreshSharedData();
