@@ -821,6 +821,7 @@ alter publication supabase_realtime add table streak_reasons;</pre>
       if (!sharedSessionToken || suppressSharedSave) return;
       clearTimeout(sharedSaveTimer);
       sharedSaveTimer = setTimeout(async () => {
+        sharedSaveTimer = null;
         if (sharedSaveInFlight) { scheduleSharedSave(); return; }
         sharedSaveInFlight = true;
         try {
