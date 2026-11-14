@@ -870,7 +870,10 @@ alter publication supabase_realtime add table streak_reasons;</pre>
     function scheduleCloudSave() {
       if (!cloudSessionToken || applyingCloudData) return;
       clearTimeout(cloudSaveTimer);
-      cloudSaveTimer = setTimeout(saveCloudData, 650);
+      cloudSaveTimer = setTimeout(() => {
+        cloudSaveTimer = null;
+        saveCloudData();
+      }, 650);
     }
 
     async function syncFromSupabase(seedIfEmpty = false) {
@@ -2789,7 +2792,13 @@ alter publication supabase_realtime add table streak_reasons;</pre>
     document.getElementById('lockBtn').addEventListener('click', async () => {
       clearInterval(cloudPollTimer);
       clearTimeout(cloudSaveTimer);
-      try { if (cloudSessionToken) await cloudRequest('logout'); } catch (e) {}
+      cloudSaveTimer = null;
+      try {
+        if (cloudSessionToken) {
+          await saveCloudData();
+          await cloudRequest('logout');
+        }
+      } catch (e) {}
       setCloudToken('');
       appScreen.classList.add('hidden');
       appScreen.classList.remove('flex');
