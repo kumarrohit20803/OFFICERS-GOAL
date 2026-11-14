@@ -787,6 +787,7 @@ alter publication supabase_realtime add table streak_reasons;</pre>
       } catch (e) {
         // Ignore storage errors
       }
+      if (typeof scheduleCloudSave === 'function') scheduleCloudSave();
     }
 
     let appConfig = loadConfig();
@@ -802,128 +803,119 @@ alter publication supabase_realtime add table streak_reasons;</pre>
       rohit: { open: false, exam: 'ALL', stage: 'ALL', type: 'ALL', subjects: [], cutoff: 'ALL' }
     };
 
-    // --- SUPABASE CLIENT & REALTIME ---
-    function stopRealtime() {
-      if (realtimeChannel && supabaseClient) {
-        try {
-          supabaseClient.removeChannel(realtimeChannel);
-        } catch (e) {}
-      }
-      realtimeChannel = null;
-    }
+    // --- SECURE SHARED SUPABASE BACKEND ---
+    const CLOUD_API_URL = 'https://hfnshmquawyqgcfqtimk.supabase.co/functions/v1/officers-goal-api';
+    const CLOUD_PUBLIC_KEY = 'sb_publishable_9q843dgjWy4KHvt1VPALFw_1K7gs-hf';
+    const CLOUD_TOKEN_KEY = 'officers_goal_session_v1';
+    let cloudSessionToken = '';
+    let cloudSaveTimer = null;
+    let cloudPollTimer = null;
+    let applyingCloudData = false;
+    let cloudSyncBusy = false;
+    let lastCloudUpdatedAt = null;
 
-    function startRealtime() {
-      if (!supabaseClient) return;
-      stopRealtime();
+    function setCloudToken(token) {
+      cloudSessionToken = token || '';
       try {
-        realtimeChannel = supabaseClient
-          .channel('command_tracker_live_sync')
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'habits' }, () => {
-            syncFromSupabase().then(() => renderCurrentView());
-          })
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'habit_logs' }, () => {
-            syncFromSupabase().then(() => renderCurrentView());
-          })
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_goals' }, () => {
-            syncFromSupabase().then(() => renderCurrentView());
-          })
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'mock_tests' }, () => {
-            syncFromSupabase().then(() => renderCurrentView());
-          })
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'exam_dates' }, () => {
-            syncFromSupabase().then(() => renderCurrentView());
-          })
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'streak_reasons' }, () => {
-            syncFromSupabase().then(() => renderCurrentView());
-          })
-          .subscribe();
+        if (cloudSessionToken) localStorage.setItem(CLOUD_TOKEN_KEY, cloudSessionToken);
+        else localStorage.removeItem(CLOUD_TOKEN_KEY);
       } catch (e) {}
     }
 
+    async function cloudRequest(action, extra = {}, useSession = true) {
+      const headers = { 'Content-Type': 'application/json', 'apikey': CLOUD_PUBLIC_KEY };
+      if (useSession && cloudSessionToken) headers.Authorization = 'Bearer ' + cloudSessionToken;
+      const response = await fetch(CLOUD_API_URL, {
+        method: 'POST',
+        headers,
+        cache: 'no-store',
+        body: JSON.stringify({ action, ...extra })
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || 'Cloud request failed (' + response.status + ')');
+      return result;
+    }
+
     function initSupabase() {
-      stopRealtime();
-      if (appConfig.supabaseUrl && appConfig.supabaseKey && window.supabase) {
-        try {
-          supabaseClient = window.supabase.createClient(appConfig.supabaseUrl, appConfig.supabaseKey);
-          startRealtime();
-          return true;
-        } catch (e) {
-          supabaseClient = null;
-          return false;
-        }
-      }
       supabaseClient = null;
-      return false;
+      return !!cloudSessionToken;
     }
 
-    async function pushLocalToSupabaseIfEmpty() {
-      if (!supabaseClient) return;
-      if (appData.habits.length > 0) {
-        await supabaseClient.from('habits').upsert(appData.habits);
-      }
-      if (appData.habitLogs.length > 0) {
-        await supabaseClient.from('habit_logs').upsert(appData.habitLogs);
-      }
-      if (appData.dailyGoals.length > 0) {
-        await supabaseClient.from('daily_goals').upsert(appData.dailyGoals);
-      }
-      if (appData.mockTests.length > 0) {
-        await supabaseClient.from('mock_tests').upsert(appData.mockTests);
-      }
-      if (appData.examDates.length > 0) {
-        await supabaseClient.from('exam_dates').upsert(appData.examDates);
-      }
-      if (appData.streakReasons.length > 0) {
-        await supabaseClient.from('streak_reasons').upsert(appData.streakReasons);
-      }
+    function hasLocalAppData() {
+      return !!(appData && (
+        (appData.habits || []).length ||
+        (appData.habitLogs || []).length ||
+        (appData.dailyGoals || []).length ||
+        (appData.mockTests || []).length ||
+        (appData.examDates || []).length ||
+        (appData.streakReasons || []).length
+      ));
     }
 
-    async function syncFromSupabase(seedIfEmpty = false) {
-      if (!supabaseClient) return;
+    async function saveCloudData() {
+      if (!cloudSessionToken || applyingCloudData || cloudSyncBusy) return;
+      cloudSyncBusy = true;
       try {
-        const [hRes, lRes, gRes, mRes, eRes, rRes] = await Promise.all([
-          supabaseClient.from('habits').select('*'),
-          supabaseClient.from('habit_logs').select('*'),
-          supabaseClient.from('daily_goals').select('*'),
-          supabaseClient.from('mock_tests').select('*'),
-          supabaseClient.from('exam_dates').select('*'),
-          supabaseClient.from('streak_reasons').select('*')
-        ]);
-        if (hRes.error || lRes.error || gRes.error || mRes.error || eRes.error || rRes.error) {
-          throw new Error((hRes.error || lRes.error || gRes.error || mRes.error || eRes.error || rRes.error).message);
-        }
-        const remoteEmpty = (hRes.data || []).length === 0 && (lRes.data || []).length === 0 && (gRes.data || []).length === 0 && (mRes.data || []).length === 0 && (eRes.data || []).length === 0 && (rRes.data || []).length === 0;
-        if (seedIfEmpty && remoteEmpty && (appData.habits.length > 0 || appData.dailyGoals.length > 0 || appData.mockTests.length > 0 || appData.examDates.length > 0 || appData.streakReasons.length > 0)) {
-          await pushLocalToSupabaseIfEmpty();
-        } else {
-          appData = {
-            habits: hRes.data || [],
-            habitLogs: lRes.data || [],
-            dailyGoals: gRes.data || [],
-            mockTests: mRes.data || [],
-            examDates: eRes.data || [],
-            streakReasons: rRes.data || []
-          };
-          saveLocalData();
-        }
+        await cloudRequest('save', { payload: appData });
+        const latest = await cloudRequest('get');
+        lastCloudUpdatedAt = latest.updated_at || lastCloudUpdatedAt;
         updateDbBadge(true);
       } catch (err) {
         updateDbBadge(false, err.message);
+      } finally {
+        cloudSyncBusy = false;
       }
     }
 
-    async function runDbWrite(promise) {
-      if (!supabaseClient) return;
+    function scheduleCloudSave() {
+      if (!cloudSessionToken || applyingCloudData) return;
+      clearTimeout(cloudSaveTimer);
+      cloudSaveTimer = setTimeout(() => {
+        cloudSaveTimer = null;
+        saveCloudData();
+      }, 650);
+    }
+
+    async function syncFromSupabase(seedIfEmpty = false) {
+      if (!cloudSessionToken || cloudSyncBusy) return;
+      cloudSyncBusy = true;
       try {
-        const res = await promise;
-        if (res && res.error) {
-          updateDbBadge(false, res.error.message);
-        } else {
-          updateDbBadge(true);
+        const remote = await cloudRequest('get');
+        const payload = remote.payload && typeof remote.payload === 'object' ? remote.payload : {};
+        const remoteHasData = Object.keys(payload).length > 0;
+        if (!remoteHasData && (seedIfEmpty || hasLocalAppData())) {
+          cloudSyncBusy = false;
+          await saveCloudData();
+          return;
         }
+        if (remoteHasData && remote.updated_at && remote.updated_at !== lastCloudUpdatedAt) {
+          applyingCloudData = true;
+          appData = {
+            habits: Array.isArray(payload.habits) ? payload.habits : [],
+            habitLogs: Array.isArray(payload.habitLogs) ? payload.habitLogs : [],
+            dailyGoals: Array.isArray(payload.dailyGoals) ? payload.dailyGoals : [],
+            mockTests: Array.isArray(payload.mockTests) ? payload.mockTests : [],
+            examDates: Array.isArray(payload.examDates) ? payload.examDates : [],
+            streakReasons: Array.isArray(payload.streakReasons) ? payload.streakReasons : []
+          };
+          try { localStorage.setItem(STORAGE_KEY, JSON.stringify(appData)); } catch (e) {}
+          applyingCloudData = false;
+        }
+        lastCloudUpdatedAt = remote.updated_at || lastCloudUpdatedAt;
+        updateDbBadge(true);
+        renderCurrentView();
       } catch (err) {
         updateDbBadge(false, err.message);
+      } finally {
+        applyingCloudData = false;
+        cloudSyncBusy = false;
       }
+    }
+
+    async function runDbWrite() {
+      // All app data is saved as one shared workspace document through the
+      // authenticated Edge Function. Legacy table writes are intentionally disabled.
+      scheduleCloudSave();
     }
 
     function updateDbBadge(connected, errMsg = '') {
@@ -931,25 +923,34 @@ alter publication supabase_realtime add table streak_reasons;</pre>
       const dbDot = document.getElementById('dbDot');
       const dbLabel = document.getElementById('dbLabel');
       const syncNowBtn = document.getElementById('syncNowBtn');
-      if (supabaseClient && connected) {
+      if (cloudSessionToken && connected) {
         dbBadgeBtn.className = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border bg-emerald-50 text-emerald-700 border-emerald-200 transition cursor-pointer';
         dbDot.className = 'w-2 h-2 rounded-full bg-emerald-500';
-        dbLabel.textContent = 'Live Synced';
-        dbBadgeBtn.title = 'Synced in real time with Supabase';
+        dbLabel.textContent = 'Cloud Synced';
+        dbBadgeBtn.title = 'Shared data is connected to Supabase';
         syncNowBtn.classList.remove('hidden');
-      } else if (supabaseClient && !connected) {
+      } else if (cloudSessionToken && !connected) {
         dbBadgeBtn.className = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border bg-amber-50 text-amber-700 border-amber-200 transition cursor-pointer';
         dbDot.className = 'w-2 h-2 rounded-full bg-amber-500';
-        dbLabel.textContent = 'Sync Error (Local Fallback)';
-        dbBadgeBtn.title = errMsg || 'Check Supabase tables/keys';
+        dbLabel.textContent = 'Sync Error';
+        dbBadgeBtn.title = errMsg || 'Cloud synchronization needs attention';
         syncNowBtn.classList.remove('hidden');
       } else {
         dbBadgeBtn.className = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border bg-slate-100 text-slate-600 border-slate-200 transition cursor-pointer';
         dbDot.className = 'w-2 h-2 rounded-full bg-slate-400';
-        dbLabel.textContent = 'Local Mode';
-        dbBadgeBtn.title = 'Click to connect Supabase';
+        dbLabel.textContent = 'Not Connected';
+        dbBadgeBtn.title = 'Log in to connect shared cloud data';
         syncNowBtn.classList.add('hidden');
       }
+    }
+
+    function startCloudPolling() {
+      clearInterval(cloudPollTimer);
+      cloudPollTimer = setInterval(() => {
+        if (cloudSessionToken && !document.hidden && !cloudSyncBusy && !cloudSaveTimer) {
+          syncFromSupabase();
+        }
+      }, 5000);
     }
 
     // --- DAILY STATS & STREAK CALCULATIONS ---
@@ -2764,42 +2765,59 @@ alter publication supabase_realtime add table streak_reasons;</pre>
 
     loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      if (passwordInput.value === appConfig.password) {
+      const enteredPassword = passwordInput.value;
+      const submitButton = loginForm.querySelector('button[type="submit"]');
+      submitButton.disabled = true;
+      try {
+        const result = await cloudRequest('login', { password: enteredPassword }, false);
+        setCloudToken(result.token);
         loginError.classList.add('hidden');
         passwordInput.value = '';
         loginScreen.classList.add('hidden');
         appScreen.classList.remove('hidden');
         appScreen.classList.add('flex');
-        if (initSupabase()) {
-          await syncFromSupabase();
-        } else {
-          updateDbBadge(false);
-        }
+        updateDbBadge(true);
+        await syncFromSupabase(true);
+        startCloudPolling();
         switchView('dashboard');
-      } else {
+      } catch (err) {
+        loginError.textContent = err.message === 'Incorrect password' ? 'Incorrect password. Try again.' : 'Could not connect. Check your internet and try again.';
         loginError.classList.remove('hidden');
         passwordInput.select();
+      } finally {
+        submitButton.disabled = false;
       }
     });
 
-    document.getElementById('lockBtn').addEventListener('click', () => {
+    document.getElementById('lockBtn').addEventListener('click', async () => {
+      clearInterval(cloudPollTimer);
+      clearTimeout(cloudSaveTimer);
+      cloudSaveTimer = null;
+      try {
+        if (cloudSessionToken) {
+          await saveCloudData();
+          await cloudRequest('logout');
+        }
+      } catch (e) {}
+      setCloudToken('');
       appScreen.classList.add('hidden');
       appScreen.classList.remove('flex');
       loginScreen.classList.remove('hidden');
       loginError.classList.add('hidden');
       passwordInput.value = '';
       passwordInput.focus();
+      updateDbBadge(false);
     });
 
     document.getElementById('syncNowBtn').addEventListener('click', async () => {
-      if (supabaseClient) {
+      if (cloudSessionToken) {
         await syncFromSupabase();
         renderCurrentView();
       }
     });
 
     window.addEventListener('focus', async () => {
-      if (supabaseClient && !appScreen.classList.contains('hidden')) {
+      if (cloudSessionToken && !appScreen.classList.contains('hidden')) {
         await syncFromSupabase();
         renderCurrentView();
       }
