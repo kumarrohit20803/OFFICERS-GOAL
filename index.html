@@ -1,0 +1,2999 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Command Habit & Goal Tracker</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.47.10/dist/umd/supabase.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = { darkMode: 'class' };
+  </script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      transition: background-color 0.25s ease, color 0.25s ease;
+    }
+
+    /* Cozy Futuristic Gradient Progress & Accents */
+    .futuristic-bar {
+      background: linear-gradient(90deg, #6366f1, #a855f7, #06b6d4);
+    }
+
+    /* Black Phantom Night Mode */
+    html.dark body {
+      background-color: #050509;
+      background-image:
+        radial-gradient(circle at 15% 15%, rgba(99, 102, 241, 0.14), transparent 38%),
+        radial-gradient(circle at 85% 20%, rgba(236, 72, 153, 0.10), transparent 35%),
+        radial-gradient(circle at 50% 90%, rgba(6, 182, 212, 0.10), transparent 40%);
+      color: #e2e8f0;
+    }
+
+    html.dark .bg-white {
+      background-color: rgba(13, 14, 22, 0.92) !important;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 10px 30px -10px rgba(0, 0, 0, 0.75);
+    }
+
+    html.dark .bg-slate-50,
+    html.dark .bg-slate-50\/70,
+    html.dark .bg-slate-50\/60 {
+      background-color: #11131f !important;
+    }
+
+    html.dark .bg-slate-100 {
+      background-color: #181b2a !important;
+    }
+
+    html.dark .border-slate-100,
+    html.dark .border-slate-200,
+    html.dark .border-slate-300 {
+      border-color: rgba(148, 163, 184, 0.18) !important;
+    }
+
+    html.dark .text-slate-900 { color: #f8fafc !important; }
+    html.dark .text-slate-800 { color: #f1f5f9 !important; }
+    html.dark .text-slate-700 { color: #cbd5e1 !important; }
+    html.dark .text-slate-600 { color: #94a3b8 !important; }
+    html.dark .text-slate-500 { color: #94a3b8 !important; }
+    html.dark .text-slate-400 { color: #64748b !important; }
+
+    html.dark input,
+    html.dark select,
+    html.dark textarea {
+      background-color: #0b0c14 !important;
+      color: #f1f5f9 !important;
+      border-color: rgba(148, 163, 184, 0.25) !important;
+    }
+
+    html.dark input::placeholder,
+    html.dark textarea::placeholder {
+      color: #64748b !important;
+    }
+
+    html.dark .hover\:bg-slate-100:hover,
+    html.dark .hover\:bg-slate-50:hover {
+      background-color: #1e2235 !important;
+    }
+
+    /* Cozy neon badge adjustments in Phantom Night */
+    html.dark .bg-indigo-50,
+    html.dark .bg-indigo-50\/70,
+    html.dark .bg-indigo-50\/50 {
+      background-color: rgba(99, 102, 241, 0.16) !important;
+    }
+    html.dark .text-indigo-700,
+    html.dark .text-indigo-600 {
+      color: #a5b4fc !important;
+    }
+    html.dark .border-indigo-200 {
+      border-color: rgba(129, 140, 248, 0.35) !important;
+    }
+
+    html.dark .bg-rose-50,
+    html.dark .bg-rose-50\/70 {
+      background-color: rgba(244, 63, 94, 0.15) !important;
+    }
+    html.dark .text-rose-700,
+    html.dark .text-rose-600 {
+      color: #fda4af !important;
+    }
+    html.dark .border-rose-200 {
+      border-color: rgba(251, 113, 133, 0.35) !important;
+    }
+
+    html.dark .bg-emerald-50,
+    html.dark .bg-emerald-50\/80,
+    html.dark .bg-emerald-50\/60 {
+      background-color: rgba(16, 185, 129, 0.15) !important;
+    }
+    html.dark .text-emerald-700 {
+      color: #6ee7b7 !important;
+    }
+    html.dark .border-emerald-200,
+    html.dark .border-emerald-300 {
+      border-color: rgba(52, 211, 153, 0.35) !important;
+    }
+
+    html.dark .bg-amber-50 {
+      background-color: rgba(245, 158, 11, 0.15) !important;
+    }
+    html.dark .text-amber-800,
+    html.dark .text-amber-700 {
+      color: #fcd34d !important;
+    }
+    html.dark .border-amber-200 {
+      border-color: rgba(251, 191, 36, 0.35) !important;
+    }
+
+    html.dark .bg-purple-50 {
+      background-color: rgba(168, 85, 247, 0.16) !important;
+    }
+    html.dark .text-purple-700 {
+      color: #d8b4fe !important;
+    }
+    html.dark .border-purple-200 {
+      border-color: rgba(192, 132, 252, 0.35) !important;
+    }
+
+    html.dark .from-amber-50.to-orange-50 {
+      background-image: linear-gradient(to right, rgba(245, 158, 11, 0.18), rgba(249, 115, 22, 0.16)) !important;
+    }
+    html.dark .from-indigo-50.to-sky-50 {
+      background-image: linear-gradient(to bottom right, rgba(99, 102, 241, 0.18), rgba(6, 182, 212, 0.15)) !important;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-900 flex flex-col items-center justify-center p-3 sm:p-6">
+
+  <!-- 1. PASSWORD-ONLY LOGIN SCREEN -->
+  <section id="loginScreen" class="relative w-full max-w-sm bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8">
+    <button id="loginThemeBtn" type="button" class="absolute top-4 right-4 px-2.5 py-1 rounded-full border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition">☀️ Day</button>
+    <div class="flex flex-col items-center text-center mb-6">
+      <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-3">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        </svg>
+      </div>
+      <h1 class="text-xl font-bold text-slate-900">Habit &amp; Goal Tracker</h1>
+      <p class="text-sm text-slate-500 mt-1">Enter your password to unlock</p>
+    </div>
+
+    <form id="loginForm" class="space-y-4">
+      <div>
+        <label for="passwordInput" class="sr-only">Password</label>
+        <input
+          id="passwordInput"
+          type="password"
+          placeholder="Enter password..."
+          autocomplete="current-password"
+          autofocus
+          class="w-full px-4 py-3 rounded-xl border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+        />
+      </div>
+      <p id="loginError" class="hidden text-sm text-rose-600 font-medium text-center">
+        Incorrect password. Try again.
+      </p>
+      <button
+        type="submit"
+        class="w-full py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-semibold transition shadow-sm"
+      >
+        Log In
+      </button>
+    </form>
+  </section>
+
+  <!-- 2. MAIN APP SHELL (LEFT SIDEBAR + CONTENT) -->
+  <div id="appScreen" class="hidden w-full max-w-7xl flex-col md:flex-row gap-5 items-start">
+
+    <!-- LEFT SIDEBAR -->
+    <aside class="w-full md:w-56 bg-white rounded-2xl shadow-sm border border-slate-200 p-3 sm:p-4 shrink-0 md:sticky md:top-6 space-y-3">
+      <div class="px-2 pt-1 pb-2 border-b border-slate-100 hidden md:block">
+        <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Command Center</p>
+        <p class="text-sm font-bold text-slate-900 mt-0.5">Ekta &amp; Rohit</p>
+      </div>
+
+      <nav class="flex md:flex-col gap-1.5">
+        <button
+          id="navDashboardBtn"
+          type="button"
+          class="flex-1 md:flex-none flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition text-left"
+        >
+          <span>📋</span>
+          <span>Dashboard</span>
+        </button>
+        <button
+          id="navAnalyticsBtn"
+          type="button"
+          class="flex-1 md:flex-none flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition text-left"
+        >
+          <span>📊</span>
+          <span>Analytics</span>
+        </button>
+        <button
+          id="navMocksBtn"
+          type="button"
+          class="flex-1 md:flex-none flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition text-left"
+        >
+          <span>📝</span>
+          <span>Mock Tests</span>
+        </button>
+        <button
+          id="navExamsBtn"
+          type="button"
+          class="flex-1 md:flex-none flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition text-left"
+        >
+          <span>⏳</span>
+          <span>Exam Dates</span>
+        </button>
+      </nav>
+
+      <div class="pt-2 border-t border-slate-100 flex md:flex-col gap-2">
+        <button
+          id="themeToggleBtn"
+          type="button"
+          class="flex-1 md:flex-none px-3 py-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-100 text-xs sm:text-sm font-semibold transition text-center md:text-left"
+        >
+          🌙 Phantom Night
+        </button>
+        <button
+          id="settingsBtn"
+          type="button"
+          class="flex-1 md:flex-none px-3 py-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-100 text-xs sm:text-sm font-medium transition text-center md:text-left"
+        >
+          Supabase Setup
+        </button>
+        <button
+          id="lockBtn"
+          type="button"
+          class="flex-1 md:flex-none px-3 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 text-xs sm:text-sm font-medium transition text-center md:text-left"
+        >
+          Lock App
+        </button>
+      </div>
+    </aside>
+
+    <!-- RIGHT MAIN AREA -->
+    <main class="flex-1 w-full min-w-0 space-y-5">
+
+      <!-- VIEW 1: DASHBOARD -->
+      <div id="dashboardView" class="space-y-5">
+        <!-- Top Navigation, Shared Calendar & Combined Merged Streak Header -->
+        <header class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-5 space-y-4">
+          <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <h1 class="text-lg sm:text-xl font-bold text-slate-900">Daily Command Tracker</h1>
+                <p id="dateContextLabel" class="text-xs sm:text-sm text-slate-500 mt-0.5"></p>
+              </div>
+              <div class="flex items-center gap-2">
+                <button
+                  id="dbBadgeBtn"
+                  type="button"
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition cursor-pointer"
+                >
+                  <span id="dbDot" class="w-2 h-2 rounded-full"></span>
+                  <span id="dbLabel">Local Mode</span>
+                </button>
+                <button
+                  id="syncNowBtn"
+                  type="button"
+                  title="Sync now"
+                  class="hidden px-2.5 py-1.5 rounded-full border border-slate-200 text-slate-600 hover:bg-slate-100 text-xs font-semibold transition"
+                >
+                  ↻ Sync
+                </button>
+              </div>
+            </div>
+
+            <!-- Shared Calendar Controls -->
+            <div class="flex flex-wrap items-center gap-2">
+              <button
+                id="prevDayBtn"
+                type="button"
+                class="px-3 py-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-100 text-sm font-medium transition"
+                title="Previous day"
+              >
+                &larr;
+              </button>
+              <input
+                id="datePicker"
+                type="date"
+                class="px-3 py-2 rounded-xl border border-slate-300 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+              <button
+                id="nextDayBtn"
+                type="button"
+                class="px-3 py-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-100 text-sm font-medium transition"
+                title="Next day"
+              >
+                &rarr;
+              </button>
+              <button
+                id="todayBtn"
+                type="button"
+                class="px-3 py-2 rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-sm font-semibold transition"
+              >
+                Today
+              </button>
+            </div>
+          </div>
+
+          <!-- Combined Merged Streak & Combined Daily Percentage Meter -->
+          <div class="border-t border-slate-100 pt-4 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+            <div class="md:col-span-7 flex flex-col sm:flex-row sm:items-center gap-2.5">
+              <div class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 text-amber-800 text-sm font-bold shrink-0">
+                <span>🔥</span>
+                <span id="mergedStreakCount">0</span>
+                <span>Day Together Streak</span>
+              </div>
+              <div id="mergedFaultBanner" class="text-xs sm:text-sm font-medium px-3 py-2 rounded-xl border"></div>
+            </div>
+
+            <div class="md:col-span-5 space-y-1.5">
+              <div class="flex items-center justify-between text-xs sm:text-sm">
+                <span class="font-semibold text-slate-700">Combined Progress (<span id="combinedDateShort"></span>)</span>
+                <span id="combinedProgressText" class="font-bold text-indigo-700">0% (0 / 0)</span>
+              </div>
+              <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                <div id="combinedProgressBar" class="h-full futuristic-bar rounded-full transition-all duration-300" style="width: 0%"></div>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <!-- Two Identical Sections Side by Side -->
+        <div id="officersGrid" class="grid grid-cols-1 xl:grid-cols-2 gap-5"></div>
+      </div>
+
+      <!-- VIEW 2: ANALYTICAL SECTION -->
+      <div id="analyticsView" class="hidden space-y-5">
+        <!-- 1. Combined Lifetime Summary -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-6 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h1 class="text-lg sm:text-xl font-bold text-slate-900">Combined Analytics (Both Officers)</h1>
+              <p class="text-xs sm:text-sm text-slate-500">All daily goals created across all dates plus active daily habits</p>
+            </div>
+          </div>
+          <div id="combinedStatsGrid" class="grid grid-cols-1 sm:grid-cols-3 gap-4"></div>
+        </section>
+
+        <!-- 2. Separate Officer Summaries (Rohit & Ekta) -->
+        <div id="separateStatsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-5"></div>
+
+        <!-- 3. Big 1-Month Color-Coded Calendar -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-6 space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h2 class="text-lg font-bold text-slate-900">Monthly Completion Calendar</h2>
+              <p class="text-xs sm:text-sm text-slate-500">Click a purple or red day to log why the streak broke, or any other day to open on Dashboard</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button
+                id="prevMonthBtn"
+                type="button"
+                class="px-3 py-1.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-100 text-sm font-medium transition"
+              >
+                &larr; Prev
+              </button>
+              <span id="calendarMonthLabel" class="text-sm font-bold text-slate-800 min-w-[130px] text-center"></span>
+              <button
+                id="nextMonthBtn"
+                type="button"
+                class="px-3 py-1.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-100 text-sm font-medium transition"
+              >
+                Next &rarr;
+              </button>
+              <button
+                id="thisMonthBtn"
+                type="button"
+                class="px-3 py-1.5 rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-xs font-semibold transition"
+              >
+                This Month
+              </button>
+            </div>
+          </div>
+
+          <!-- Legend -->
+          <div class="flex flex-wrap items-center gap-4 text-xs font-medium text-slate-600 bg-slate-50 px-3.5 py-2.5 rounded-xl border border-slate-200">
+            <span class="inline-flex items-center gap-1.5">
+              <span class="w-3.5 h-3.5 rounded bg-emerald-500 inline-block"></span>
+              Both Completed (100%)
+            </span>
+            <span class="inline-flex items-center gap-1.5">
+              <span class="w-3.5 h-3.5 rounded bg-purple-500 inline-block"></span>
+              Only One Completed (100%)
+            </span>
+            <span class="inline-flex items-center gap-1.5">
+              <span class="w-3.5 h-3.5 rounded bg-rose-500 inline-block"></span>
+              Nobody Completed
+            </span>
+            <span class="inline-flex items-center gap-1.5">
+              <span class="w-3.5 h-3.5 rounded bg-white border border-slate-300 inline-block"></span>
+              Not Ended / Before Nov 15
+            </span>
+          </div>
+
+          <!-- Weekday Headers + Grid -->
+          <div class="grid grid-cols-7 gap-2 text-center text-xs font-bold uppercase tracking-wide text-slate-400 pt-1">
+            <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+          </div>
+          <div id="monthlyCalendarGrid" class="grid grid-cols-7 gap-2"></div>
+        </section>
+
+        <!-- 4. Streak-Break Reasons Log -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-6 space-y-3">
+          <h2 class="text-sm font-bold uppercase tracking-wide text-slate-700">Streak-Break Reasons Log</h2>
+          <ul id="streakReasonsList" class="space-y-2"></ul>
+        </section>
+      </div>
+
+      <!-- VIEW 3: MOCK TESTS -->
+      <div id="mockTestsView" class="hidden space-y-5">
+        <header class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div>
+            <h1 class="text-lg sm:text-xl font-bold text-slate-900">Mock Test Tracker</h1>
+            <p class="text-xs sm:text-sm text-slate-500">Log Pre &amp; Mains scores (Full 200-mark or 50-mark Sectional) separately for both officers</p>
+          </div>
+        </header>
+        <div id="mocksGrid" class="grid grid-cols-1 xl:grid-cols-2 gap-5"></div>
+      </div>
+
+      <!-- VIEW 4: EXAM DATES & COUNTDOWNS -->
+      <div id="examDatesView" class="hidden space-y-5">
+        <header class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-5">
+          <h1 class="text-lg sm:text-xl font-bold text-slate-900">Exam Dates &amp; Countdowns</h1>
+          <p class="text-xs sm:text-sm text-slate-500 mt-0.5">Set target exam dates for Officer Ekta, Officer Rohit, or both—live countdowns appear on their Dashboard cards</p>
+        </header>
+
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-6">
+          <h2 class="text-sm font-bold text-slate-800 mb-3">Add Target Exam Date</h2>
+          <form id="addExamDateForm" class="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
+            <div class="sm:col-span-1">
+              <label for="examNameInput" class="block text-[11px] font-semibold uppercase text-slate-500 mb-1">Exam Name</label>
+              <input id="examNameInput" type="text" placeholder="e.g. SSC CGL Tier 1" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            </div>
+            <div>
+              <label for="examDateInput" class="block text-[11px] font-semibold uppercase text-slate-500 mb-1">Exam Date</label>
+              <input id="examDateInput" type="date" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            </div>
+            <div>
+              <label for="examOfficerSelect" class="block text-[11px] font-semibold uppercase text-slate-500 mb-1">For Whom</label>
+              <select id="examOfficerSelect" class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <option value="both">Both (Ekta &amp; Rohit)</option>
+                <option value="ekta">Officer Ekta</option>
+                <option value="rohit">Officer Rohit</option>
+              </select>
+            </div>
+            <div>
+              <button type="submit" class="w-full py-2 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition">
+                Add Countdown
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-6 space-y-3">
+          <h2 class="text-sm font-bold uppercase tracking-wide text-slate-700">Scheduled Exams</h2>
+          <ul id="examDatesList" class="space-y-2.5"></ul>
+        </section>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- STREAK-BREAK REASON MODAL (FOR PURPLE & RED DAYS) -->
+  <div id="reasonModal" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-200 p-6 space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-bold text-slate-900">Log Streak-Break Reason</h2>
+          <p id="reasonModalSubtitle" class="text-xs font-medium text-slate-500 mt-0.5"></p>
+        </div>
+        <button id="closeReasonModalBtn" type="button" class="text-slate-400 hover:text-slate-600 text-xl font-bold px-2">&times;</button>
+      </div>
+
+      <form id="reasonForm" class="space-y-3.5">
+        <div>
+          <label for="reasonWhoSelect" class="block text-xs font-semibold uppercase tracking-wide text-slate-600 mb-1">Who Didn't Complete?</label>
+          <select id="reasonWhoSelect" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="ekta">Officer Ekta</option>
+            <option value="rohit">Officer Rohit</option>
+            <option value="both">Both (Officer Ekta &amp; Officer Rohit)</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="reasonTextInput" class="block text-xs font-semibold uppercase tracking-wide text-slate-600 mb-1">Reason</label>
+          <textarea
+            id="reasonTextInput"
+            rows="3"
+            placeholder="Why wasn't the task completed on this day?"
+            required
+            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          ></textarea>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2 pt-1">
+          <button type="submit" class="flex-1 py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition">
+            Save Reason
+          </button>
+          <button id="openReasonDateDashBtn" type="button" class="py-2.5 px-3.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-100 text-sm font-medium transition">
+            Open Date
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 3. SUPABASE & PASSWORD SETTINGS MODAL -->
+  <div id="settingsModal" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="w-full max-w-lg bg-white rounded-2xl shadow-xl border border-slate-200 p-6 max-h-[90vh] overflow-y-auto space-y-5">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-bold text-slate-900">Supabase Backend &amp; Settings</h2>
+        <button id="closeSettingsBtn" type="button" class="text-slate-400 hover:text-slate-600 text-xl font-bold px-2">&times;</button>
+      </div>
+
+      <form id="settingsForm" class="space-y-4">
+        <div>
+          <label for="supabaseUrlInput" class="block text-xs font-semibold uppercase tracking-wide text-slate-600 mb-1">Supabase Project URL</label>
+          <input
+            id="supabaseUrlInput"
+            type="url"
+            placeholder="https://your-project.supabase.co"
+            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+        <div>
+          <label for="supabaseKeyInput" class="block text-xs font-semibold uppercase tracking-wide text-slate-600 mb-1">Supabase Anon Public Key</label>
+          <input
+            id="supabaseKeyInput"
+            type="password"
+            placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+        <div>
+          <label for="newPasswordInput" class="block text-xs font-semibold uppercase tracking-wide text-slate-600 mb-1">App Login Password (optional change)</label>
+          <input
+            id="newPasswordInput"
+            type="text"
+            placeholder="Leave blank to keep current password"
+            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+
+        <p id="settingsStatus" class="hidden text-sm font-medium"></p>
+
+        <div class="flex flex-wrap items-center gap-2 pt-1">
+          <button
+            type="submit"
+            class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition"
+          >
+            Save &amp; Connect
+          </button>
+          <button
+            id="disconnectSupabaseBtn"
+            type="button"
+            class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-100 text-sm font-medium transition"
+          >
+            Use Local Mode
+          </button>
+        </div>
+      </form>
+
+      <!-- SQL Setup Helper -->
+      <div class="border-t border-slate-200 pt-4 space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wide text-slate-600">Supabase SQL Setup (Run once in SQL Editor)</span>
+          <button
+            id="copySqlBtn"
+            type="button"
+            class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 px-2 py-1 rounded-lg hover:bg-indigo-50 transition"
+          >
+            Copy SQL
+          </button>
+        </div>
+        <pre id="sqlCodeBlock" class="bg-slate-900 text-slate-100 text-xs p-3 rounded-xl overflow-x-auto leading-relaxed">create table if not exists habits (
+  id text primary key,
+  officer text not null,
+  name text not null,
+  created_at timestamptz default now()
+);
+
+create table if not exists habit_logs (
+  id text primary key,
+  officer text not null,
+  habit_id text not null,
+  log_date text not null
+);
+
+create table if not exists daily_goals (
+  id text primary key,
+  officer text not null,
+  goal_date text not null,
+  title text not null,
+  priority text not null default 'important',
+  completed boolean not null default false
+);
+
+alter table habits disable row level security;
+alter table habit_logs disable row level security;
+alter table daily_goals disable row level security;
+
+alter publication supabase_realtime add table habits;
+alter publication supabase_realtime add table habit_logs;
+create table if not exists mock_tests (
+  id text primary key,
+  officer text not null,
+  exam_name text not null default 'SSC CGL',
+  test_date text not null,
+  stage text not null,
+  test_type text not null,
+  subject text,
+  math_marks numeric,
+  reasoning_marks numeric,
+  english_marks numeric,
+  gkgs_marks numeric,
+  scored_marks numeric not null,
+  total_marks numeric not null,
+  cutoff_marks numeric,
+  computer_qualified boolean,
+  created_at timestamptz default now()
+);
+
+alter table mock_tests disable row level security;
+
+alter publication supabase_realtime add table daily_goals;
+create table if not exists exam_dates (
+  id text primary key,
+  exam_name text not null,
+  exam_date text not null,
+  officer text not null,
+  created_at timestamptz default now()
+);
+
+alter table exam_dates disable row level security;
+
+alter publication supabase_realtime add table mock_tests;
+create table if not exists streak_reasons (
+  id text primary key,
+  reason_date text not null,
+  who_missed text not null,
+  reason text not null,
+  created_at timestamptz default now()
+);
+
+alter table streak_reasons disable row level security;
+
+alter publication supabase_realtime add table exam_dates;
+alter publication supabase_realtime add table streak_reasons;</pre>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- CONSTANTS & CONFIG ---
+    const STORAGE_KEY = 'command_tracker_v2';
+    const TRACKING_START_DATE = '2026-11-15';
+    const CONFIG_KEY = 'command_tracker_config_v2';
+    const OFFICERS = [
+      { id: 'ekta', name: 'Officer Ekta', badgeBg: 'bg-rose-50 text-rose-700 border-rose-200', barColor: 'bg-gradient-to-r from-rose-500 via-pink-500 to-amber-400' },
+      { id: 'rohit', name: 'Officer Rohit', badgeBg: 'bg-indigo-50 text-indigo-700 border-indigo-200', barColor: 'bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-400' }
+    ];
+
+    const PRIORITIES = {
+      urgent: { label: 'Urgent & Important', rank: 1, classes: 'bg-rose-50 text-rose-700 border-rose-200' },
+      important: { label: 'Important', rank: 2, classes: 'bg-amber-50 text-amber-700 border-amber-200' },
+      low: { label: 'Not Important', rank: 3, classes: 'bg-slate-100 text-slate-600 border-slate-200' }
+    };
+
+    // --- DATE HELPERS ---
+    function formatDateKey(dateObj) {
+      const y = dateObj.getFullYear();
+      const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const d = String(dateObj.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    function getTodayKey() {
+      return formatDateKey(new Date());
+    }
+
+    function shiftDateKey(dateKey, deltaDays) {
+      const [y, m, d] = dateKey.split('-').map(Number);
+      const dt = new Date(y, m - 1, d);
+      dt.setDate(dt.getDate() + deltaDays);
+      return formatDateKey(dt);
+    }
+
+    function describeDate(dateKey) {
+      const today = getTodayKey();
+      const [y, m, d] = dateKey.split('-').map(Number);
+      const dt = new Date(y, m - 1, d);
+      const formatted = dt.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
+      if (dateKey === today) return `${formatted} (Today)`;
+      if (dateKey > today) return `${formatted} (Future Plan)`;
+      return `${formatted} (Past Record)`;
+    }
+
+    // --- CONFIG & STATE ---
+    function loadConfig() {
+      try {
+        const raw = localStorage.getItem(CONFIG_KEY);
+        if (!raw) return { password: '1234', supabaseUrl: '', supabaseKey: '' };
+        const parsed = JSON.parse(raw);
+        return {
+          password: parsed.password || '1234',
+          supabaseUrl: parsed.supabaseUrl || '',
+          supabaseKey: parsed.supabaseKey || ''
+        };
+      } catch (e) {
+        return { password: '1234', supabaseUrl: '', supabaseKey: '' };
+      }
+    }
+
+    function saveConfig() {
+      try {
+        localStorage.setItem(CONFIG_KEY, JSON.stringify(appConfig));
+      } catch (e) {
+        // Ignore storage errors
+      }
+    }
+
+    const defaultData = {
+      habits: [
+        { id: 'ekta_h1', officer: 'ekta', name: 'Morning Walk 20 mins' },
+        { id: 'ekta_h2', officer: 'ekta', name: 'Drink 2L Water' },
+        { id: 'rohit_h1', officer: 'rohit', name: 'Study / Practice 1 hr' },
+        { id: 'rohit_h2', officer: 'rohit', name: 'Workout 30 mins' }
+      ],
+      habitLogs: [],
+      dailyGoals: [
+        { id: 'ekta_g1', officer: 'ekta', goal_date: getTodayKey(), title: 'Review daily notes', priority: 'important', completed: false },
+        { id: 'rohit_g1', officer: 'rohit', goal_date: getTodayKey(), title: 'Finish priority task', priority: 'urgent', completed: false }
+      ],
+      mockTests: [],
+      examDates: [],
+      streakReasons: []
+    };
+
+    function loadLocalData() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return structuredClone(defaultData);
+        const parsed = JSON.parse(raw);
+        return {
+          habits: Array.isArray(parsed.habits) ? parsed.habits : defaultData.habits,
+          habitLogs: Array.isArray(parsed.habitLogs) ? parsed.habitLogs : [],
+          dailyGoals: Array.isArray(parsed.dailyGoals) ? parsed.dailyGoals : [],
+          mockTests: Array.isArray(parsed.mockTests) ? parsed.mockTests : [],
+          examDates: Array.isArray(parsed.examDates) ? parsed.examDates : [],
+          streakReasons: Array.isArray(parsed.streakReasons) ? parsed.streakReasons : []
+        };
+      } catch (e) {
+        return structuredClone(defaultData);
+      }
+    }
+
+    function saveLocalData() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+      } catch (e) {
+        // Ignore storage errors
+      }
+    }
+
+    let appConfig = loadConfig();
+    let appData = loadLocalData();
+    let selectedDate = getTodayKey();
+    let activeView = 'dashboard'; // 'dashboard' | 'analytics'
+    let calendarMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    let supabaseClient = null;
+    let realtimeChannel = null;
+    let editingItem = null;
+    const mockFilters = {
+      ekta: { open: false, exam: 'ALL', stage: 'ALL', type: 'ALL', subjects: [], cutoff: 'ALL' },
+      rohit: { open: false, exam: 'ALL', stage: 'ALL', type: 'ALL', subjects: [], cutoff: 'ALL' }
+    };
+
+    // --- SUPABASE CLIENT & REALTIME ---
+    function stopRealtime() {
+      if (realtimeChannel && supabaseClient) {
+        try {
+          supabaseClient.removeChannel(realtimeChannel);
+        } catch (e) {}
+      }
+      realtimeChannel = null;
+    }
+
+    function startRealtime() {
+      if (!supabaseClient) return;
+      stopRealtime();
+      try {
+        realtimeChannel = supabaseClient
+          .channel('command_tracker_live_sync')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'habits' }, () => {
+            syncFromSupabase().then(() => renderCurrentView());
+          })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'habit_logs' }, () => {
+            syncFromSupabase().then(() => renderCurrentView());
+          })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_goals' }, () => {
+            syncFromSupabase().then(() => renderCurrentView());
+          })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'mock_tests' }, () => {
+            syncFromSupabase().then(() => renderCurrentView());
+          })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'exam_dates' }, () => {
+            syncFromSupabase().then(() => renderCurrentView());
+          })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'streak_reasons' }, () => {
+            syncFromSupabase().then(() => renderCurrentView());
+          })
+          .subscribe();
+      } catch (e) {}
+    }
+
+    function initSupabase() {
+      stopRealtime();
+      if (appConfig.supabaseUrl && appConfig.supabaseKey && window.supabase) {
+        try {
+          supabaseClient = window.supabase.createClient(appConfig.supabaseUrl, appConfig.supabaseKey);
+          startRealtime();
+          return true;
+        } catch (e) {
+          supabaseClient = null;
+          return false;
+        }
+      }
+      supabaseClient = null;
+      return false;
+    }
+
+    async function pushLocalToSupabaseIfEmpty() {
+      if (!supabaseClient) return;
+      if (appData.habits.length > 0) {
+        await supabaseClient.from('habits').upsert(appData.habits);
+      }
+      if (appData.habitLogs.length > 0) {
+        await supabaseClient.from('habit_logs').upsert(appData.habitLogs);
+      }
+      if (appData.dailyGoals.length > 0) {
+        await supabaseClient.from('daily_goals').upsert(appData.dailyGoals);
+      }
+      if (appData.mockTests.length > 0) {
+        await supabaseClient.from('mock_tests').upsert(appData.mockTests);
+      }
+      if (appData.examDates.length > 0) {
+        await supabaseClient.from('exam_dates').upsert(appData.examDates);
+      }
+      if (appData.streakReasons.length > 0) {
+        await supabaseClient.from('streak_reasons').upsert(appData.streakReasons);
+      }
+    }
+
+    async function syncFromSupabase(seedIfEmpty = false) {
+      if (!supabaseClient) return;
+      try {
+        const [hRes, lRes, gRes, mRes, eRes, rRes] = await Promise.all([
+          supabaseClient.from('habits').select('*'),
+          supabaseClient.from('habit_logs').select('*'),
+          supabaseClient.from('daily_goals').select('*'),
+          supabaseClient.from('mock_tests').select('*'),
+          supabaseClient.from('exam_dates').select('*'),
+          supabaseClient.from('streak_reasons').select('*')
+        ]);
+        if (hRes.error || lRes.error || gRes.error || mRes.error || eRes.error || rRes.error) {
+          throw new Error((hRes.error || lRes.error || gRes.error || mRes.error || eRes.error || rRes.error).message);
+        }
+        const remoteEmpty = (hRes.data || []).length === 0 && (lRes.data || []).length === 0 && (gRes.data || []).length === 0 && (mRes.data || []).length === 0 && (eRes.data || []).length === 0 && (rRes.data || []).length === 0;
+        if (seedIfEmpty && remoteEmpty && (appData.habits.length > 0 || appData.dailyGoals.length > 0 || appData.mockTests.length > 0 || appData.examDates.length > 0 || appData.streakReasons.length > 0)) {
+          await pushLocalToSupabaseIfEmpty();
+        } else {
+          appData = {
+            habits: hRes.data || [],
+            habitLogs: lRes.data || [],
+            dailyGoals: gRes.data || [],
+            mockTests: mRes.data || [],
+            examDates: eRes.data || [],
+            streakReasons: rRes.data || []
+          };
+          saveLocalData();
+        }
+        updateDbBadge(true);
+      } catch (err) {
+        updateDbBadge(false, err.message);
+      }
+    }
+
+    async function runDbWrite(promise) {
+      if (!supabaseClient) return;
+      try {
+        const res = await promise;
+        if (res && res.error) {
+          updateDbBadge(false, res.error.message);
+        } else {
+          updateDbBadge(true);
+        }
+      } catch (err) {
+        updateDbBadge(false, err.message);
+      }
+    }
+
+    function updateDbBadge(connected, errMsg = '') {
+      const dbBadgeBtn = document.getElementById('dbBadgeBtn');
+      const dbDot = document.getElementById('dbDot');
+      const dbLabel = document.getElementById('dbLabel');
+      const syncNowBtn = document.getElementById('syncNowBtn');
+      if (supabaseClient && connected) {
+        dbBadgeBtn.className = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border bg-emerald-50 text-emerald-700 border-emerald-200 transition cursor-pointer';
+        dbDot.className = 'w-2 h-2 rounded-full bg-emerald-500';
+        dbLabel.textContent = 'Live Synced';
+        dbBadgeBtn.title = 'Synced in real time with Supabase';
+        syncNowBtn.classList.remove('hidden');
+      } else if (supabaseClient && !connected) {
+        dbBadgeBtn.className = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border bg-amber-50 text-amber-700 border-amber-200 transition cursor-pointer';
+        dbDot.className = 'w-2 h-2 rounded-full bg-amber-500';
+        dbLabel.textContent = 'Sync Error (Local Fallback)';
+        dbBadgeBtn.title = errMsg || 'Check Supabase tables/keys';
+        syncNowBtn.classList.remove('hidden');
+      } else {
+        dbBadgeBtn.className = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border bg-slate-100 text-slate-600 border-slate-200 transition cursor-pointer';
+        dbDot.className = 'w-2 h-2 rounded-full bg-slate-400';
+        dbLabel.textContent = 'Local Mode';
+        dbBadgeBtn.title = 'Click to connect Supabase';
+        syncNowBtn.classList.add('hidden');
+      }
+    }
+
+    // --- DAILY STATS & STREAK CALCULATIONS ---
+    function getOfficerDayStats(officerId, dateKey) {
+      const habits = appData.habits.filter(h => h.officer === officerId);
+      const checkedSet = new Set(
+        appData.habitLogs
+          .filter(l => l.officer === officerId && l.log_date === dateKey)
+          .map(l => l.habit_id)
+      );
+      const habitDone = habits.filter(h => checkedSet.has(h.id)).length;
+
+      const goals = appData.dailyGoals.filter(g => g.officer === officerId && g.goal_date === dateKey);
+      const goalDone = goals.filter(g => g.completed).length;
+
+      const total = habits.length + goals.length;
+      const done = habitDone + goalDone;
+      const pct = total === 0 ? 0 : Math.round((done / total) * 100);
+
+      return {
+        habitTotal: habits.length,
+        habitDone,
+        goalTotal: goals.length,
+        goalDone,
+        total,
+        done,
+        pct,
+        isComplete: total > 0 && done === total
+      };
+    }
+
+    function getOfficerLifetimeStats(officerId) {
+      const today = getTodayKey();
+      const habits = appData.habits.filter(h => h.officer === officerId);
+      const todayChecked = new Set(
+        appData.habitLogs
+          .filter(l => l.officer === officerId && l.log_date === today)
+          .map(l => l.habit_id)
+      );
+      const habitsDoneToday = habits.filter(h => todayChecked.has(h.id)).length;
+
+      const goals = appData.dailyGoals.filter(g => g.officer === officerId);
+      const goalsCompleted = goals.filter(g => g.completed).length;
+
+      const created = goals.length + habits.length;
+      const completed = goalsCompleted + habitsDoneToday;
+      const left = created - completed;
+      return { created, completed, left };
+    }
+
+    function getOfficerStreak(officerId) {
+      const today = getTodayKey();
+      const yesterday = shiftDateKey(today, -1);
+
+      let cursorDate = null;
+      if (getOfficerDayStats(officerId, today).isComplete) {
+        cursorDate = today;
+      } else if (getOfficerDayStats(officerId, yesterday).isComplete) {
+        cursorDate = yesterday;
+      } else {
+        return 0;
+      }
+
+      let streak = 0;
+      while (getOfficerDayStats(officerId, cursorDate).isComplete) {
+        streak += 1;
+        cursorDate = shiftDateKey(cursorDate, -1);
+      }
+      return streak;
+    }
+
+    function getMergedStreakAndFault() {
+      const today = getTodayKey();
+      const yesterday = shiftDateKey(today, -1);
+
+      const isBothComplete = (dateKey) => {
+        const e = getOfficerDayStats('ekta', dateKey);
+        const r = getOfficerDayStats('rohit', dateKey);
+        return e.isComplete && r.isComplete;
+      };
+
+      let cursorDate = null;
+      if (isBothComplete(today)) {
+        cursorDate = today;
+      } else if (isBothComplete(yesterday)) {
+        cursorDate = yesterday;
+      }
+
+      let streak = 0;
+      if (cursorDate) {
+        while (isBothComplete(cursorDate)) {
+          streak += 1;
+          cursorDate = shiftDateKey(cursorDate, -1);
+        }
+      }
+
+      const eToday = getOfficerDayStats('ekta', today);
+      const rToday = getOfficerDayStats('rohit', today);
+      const eYest = getOfficerDayStats('ekta', yesterday);
+      const rYest = getOfficerDayStats('rohit', yesterday);
+
+      if (streak > 0) {
+        if (eToday.isComplete && rToday.isComplete) {
+          return {
+            streak,
+            tone: 'success',
+            message: 'Both Officer Ekta & Officer Rohit hit 100% today!'
+          };
+        }
+        const waiting = [];
+        if (!eToday.isComplete) waiting.push(`Officer Ekta (${eToday.pct}%)`);
+        if (!rToday.isComplete) waiting.push(`Officer Rohit (${rToday.pct}%)`);
+        return {
+          streak,
+          tone: 'info',
+          message: `Waiting today on: ${waiting.join(' & ')}`
+        };
+      }
+
+      const checkYesterday = yesterday >= TRACKING_START_DATE;
+      const eMissedYest = checkYesterday && eYest.total > 0 && !eYest.isComplete;
+      const rMissedYest = checkYesterday && rYest.total > 0 && !rYest.isComplete;
+
+      if (eMissedYest && rMissedYest) {
+        return {
+          streak: 0,
+          tone: 'danger',
+          message: `Streak broken yesterday: Both Officer Ekta (${eYest.done}/${eYest.total}) & Officer Rohit (${rYest.done}/${rYest.total}) missed tasks.`
+        };
+      }
+      if (eMissedYest) {
+        return {
+          streak: 0,
+          tone: 'danger',
+          message: `Streak broken yesterday: Officer Ekta's fault (${eYest.done}/${eYest.total} completed).`
+        };
+      }
+      if (rMissedYest) {
+        return {
+          streak: 0,
+          tone: 'danger',
+          message: `Streak broken yesterday: Officer Rohit's fault (${rYest.done}/${rYest.total} completed).`
+        };
+      }
+
+      if (eToday.isComplete && !rToday.isComplete) {
+        return {
+          streak: 0,
+          tone: 'warning',
+          message: `Officer Ekta is at 100% today — waiting on Officer Rohit (${rToday.done}/${rToday.total}).`
+        };
+      }
+      if (rToday.isComplete && !eToday.isComplete) {
+        return {
+          streak: 0,
+          tone: 'warning',
+          message: `Officer Rohit is at 100% today — waiting on Officer Ekta (${eToday.done}/${eToday.total}).`
+        };
+      }
+      return {
+        streak: 0,
+        tone: 'neutral',
+        message: 'Both officers must hit 100% on the same day to start the together streak.'
+      };
+    }
+
+    // --- DATA MUTATIONS (LOCAL + SUPABASE) ---
+    async function addHabit(officerId, name) {
+      const newHabit = {
+        id: `${officerId}_h_${Date.now()}`,
+        officer: officerId,
+        name
+      };
+      appData.habits.push(newHabit);
+      saveLocalData();
+      renderCurrentView();
+
+      if (supabaseClient) {
+        await runDbWrite(supabaseClient.from('habits').insert(newHabit));
+      }
+    }
+
+    async function updateHabitName(habitId, newName) {
+      const habit = appData.habits.find(h => h.id === habitId);
+      if (!habit) return;
+      habit.name = newName;
+      editingItem = null;
+      saveLocalData();
+      renderCurrentView();
+
+      if (supabaseClient) {
+        await runDbWrite(supabaseClient.from('habits').update({ name: newName }).eq('id', habitId));
+      }
+    }
+
+    async function deleteHabit(habitId) {
+      appData.habits = appData.habits.filter(h => h.id !== habitId);
+      appData.habitLogs = appData.habitLogs.filter(l => l.habit_id !== habitId);
+      saveLocalData();
+      renderCurrentView();
+
+      if (supabaseClient) {
+        await runDbWrite(supabaseClient.from('habits').delete().eq('id', habitId));
+        await runDbWrite(supabaseClient.from('habit_logs').delete().eq('habit_id', habitId));
+      }
+    }
+
+    async function toggleHabitLog(officerId, habitId) {
+      const existingIdx = appData.habitLogs.findIndex(
+        l => l.officer === officerId && l.habit_id === habitId && l.log_date === selectedDate
+      );
+      if (existingIdx !== -1) {
+        const [removed] = appData.habitLogs.splice(existingIdx, 1);
+        saveLocalData();
+        renderCurrentView();
+        if (supabaseClient) {
+          await runDbWrite(supabaseClient.from('habit_logs').delete().eq('id', removed.id));
+        }
+      } else {
+        const newLog = {
+          id: `${officerId}_${habitId}_${selectedDate}`,
+          officer: officerId,
+          habit_id: habitId,
+          log_date: selectedDate
+        };
+        appData.habitLogs.push(newLog);
+        saveLocalData();
+        renderCurrentView();
+        if (supabaseClient) {
+          await runDbWrite(supabaseClient.from('habit_logs').insert(newLog));
+        }
+      }
+    }
+
+    async function addGoal(officerId, title, priority) {
+      const newGoal = {
+        id: `${officerId}_g_${Date.now()}`,
+        officer: officerId,
+        goal_date: selectedDate,
+        title,
+        priority,
+        completed: false
+      };
+      appData.dailyGoals.push(newGoal);
+      saveLocalData();
+      renderCurrentView();
+
+      if (supabaseClient) {
+        await runDbWrite(supabaseClient.from('daily_goals').insert(newGoal));
+      }
+    }
+
+    async function toggleGoal(goalId) {
+      const goal = appData.dailyGoals.find(g => g.id === goalId);
+      if (!goal) return;
+      goal.completed = !goal.completed;
+      saveLocalData();
+      renderCurrentView();
+
+      if (supabaseClient) {
+        await runDbWrite(supabaseClient.from('daily_goals').update({ completed: goal.completed }).eq('id', goalId));
+      }
+    }
+
+    async function updateGoal(goalId, title, priority) {
+      const goal = appData.dailyGoals.find(g => g.id === goalId);
+      if (!goal) return;
+      goal.title = title;
+      goal.priority = priority;
+      editingItem = null;
+      saveLocalData();
+      renderCurrentView();
+
+      if (supabaseClient) {
+        await runDbWrite(supabaseClient.from('daily_goals').update({ title, priority }).eq('id', goalId));
+      }
+    }
+
+    async function deleteGoal(goalId) {
+      appData.dailyGoals = appData.dailyGoals.filter(g => g.id !== goalId);
+      saveLocalData();
+      renderCurrentView();
+
+      if (supabaseClient) {
+        await runDbWrite(supabaseClient.from('daily_goals').delete().eq('id', goalId));
+      }
+    }
+
+    // --- MOCK TEST MUTATIONS ---
+    async function addMockTest(entry) {
+      appData.mockTests.push(entry);
+      saveLocalData();
+      renderCurrentView();
+      if (supabaseClient) {
+        await runDbWrite(supabaseClient.from('mock_tests').insert(entry));
+      }
+    }
+
+    async function updateMockTest(testId, updated) {
+      const idx = appData.mockTests.findIndex(t => t.id === testId);
+      if (idx === -1) return;
+      appData.mockTests[idx] = { ...appData.mockTests[idx], ...updated };
+      editingItem = null;
+      saveLocalData();
+      renderCurrentView();
+      if (supabaseClient) {
+        await runDbWrite(supabaseClient.from('mock_tests').update(updated).eq('id', testId));
+      }
+    }
+
+    async function saveStreakReason(dateKey, whoMissed, reasonText) {
+      appData.streakReasons = appData.streakReasons || [];
+      const existing = appData.streakReasons.find(r => r.reason_date === dateKey);
+      if (existing) {
+        existing.who_missed = whoMissed;
+        existing.reason = reasonText;
+        saveLocalData();
+        renderCurrentView();
+        if (supabaseClient) {
+          await runDbWrite(supabaseClient.from('streak_reasons').update({ who_missed: whoMissed, reason: reasonText }).eq('id', existing.id));
+        }
+      } else {
+        const entry = {
+          id: `reason_${dateKey}`,
+          reason_date: dateKey,
+          who_missed: whoMissed,
+          reason: reasonText
+        };
+        appData.streakReasons.push(entry);
+        saveLocalData();
+        renderCurrentView();
+        if (supabaseClient) {
+          await runDbWrite(supabaseClient.from('streak_reasons').insert(entry));
+        }
+      }
+    }
+
+    async function deleteStreakReason(id) {
+      appData.streakReasons = (appData.streakReasons || []).filter(r => r.id !== id);
+      saveLocalData();
+      renderCurrentView();
+      if (supabaseClient) {
+        await runDbWrite(supabaseClient.from('streak_reasons').delete().eq('id', id));
+      }
+    }
+
+    async function addExamDate(entry) {
+      appData.examDates = appData.examDates || [];
+      appData.examDates.push(entry);
+      saveLocalData();
+      renderCurrentView();
+      if (supabaseClient) {
+        await runDbWrite(supabaseClient.from('exam_dates').insert(entry));
+      }
+    }
+
+    async function deleteExamDate(id) {
+      appData.examDates = (appData.examDates || []).filter(e => e.id !== id);
+      saveLocalData();
+      renderCurrentView();
+      if (supabaseClient) {
+        await runDbWrite(supabaseClient.from('exam_dates').delete().eq('id', id));
+      }
+    }
+
+    function getCountdownParts(dateKey) {
+      const [y, m, d] = dateKey.split('-').map(Number);
+      const target = new Date(y, m - 1, d, 0, 0, 0, 0);
+      const now = new Date();
+      const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+      const dayDiff = Math.round((target - todayMidnight) / (1000 * 60 * 60 * 24));
+      const msDiff = target.getTime() - now.getTime();
+      if (msDiff <= 0) {
+        return { dayDiff, hrs: '00', mins: '00', secs: '00', isToday: dayDiff === 0, isPast: dayDiff < 0 };
+      }
+      const remAfterDays = msDiff % (1000 * 60 * 60 * 24);
+      const hrs = String(Math.floor(remAfterDays / (1000 * 60 * 60))).padStart(2, '0');
+      const mins = String(Math.floor((remAfterDays % (1000 * 60 * 60)) / (1000 * 60))).padStart(2, '0');
+      const secs = String(Math.floor((remAfterDays % (1000 * 60)) / 1000)).padStart(2, '0');
+      return { dayDiff, hrs, mins, secs, isToday: false, isPast: false };
+    }
+
+    async function deleteMockTest(testId) {
+      appData.mockTests = appData.mockTests.filter(t => t.id !== testId);
+      saveLocalData();
+      renderCurrentView();
+      if (supabaseClient) {
+        await runDbWrite(supabaseClient.from('mock_tests').delete().eq('id', testId));
+      }
+    }
+
+    // --- VIEW SWITCHING ---
+    function switchView(view) {
+      activeView = view;
+      const dashView = document.getElementById('dashboardView');
+      const anaView = document.getElementById('analyticsView');
+      const mockView = document.getElementById('mockTestsView');
+      const examView = document.getElementById('examDatesView');
+      const navDash = document.getElementById('navDashboardBtn');
+      const navAna = document.getElementById('navAnalyticsBtn');
+      const navMocks = document.getElementById('navMocksBtn');
+      const navExams = document.getElementById('navExamsBtn');
+
+      const activeCls = 'flex-1 md:flex-none flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition text-left bg-indigo-600 text-white shadow-xs';
+      const idleCls = 'flex-1 md:flex-none flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition text-left text-slate-600 hover:bg-slate-100';
+
+      dashView.classList.add('hidden');
+      anaView.classList.add('hidden');
+      mockView.classList.add('hidden');
+      examView.classList.add('hidden');
+      navDash.className = idleCls;
+      navAna.className = idleCls;
+      navMocks.className = idleCls;
+      navExams.className = idleCls;
+
+      if (view === 'analytics') {
+        anaView.classList.remove('hidden');
+        navAna.className = activeCls;
+        renderAnalytics();
+      } else if (view === 'mocks') {
+        mockView.classList.remove('hidden');
+        navMocks.className = activeCls;
+        renderMockTests();
+      } else if (view === 'exams') {
+        examView.classList.remove('hidden');
+        navExams.className = activeCls;
+        renderExamDates();
+      } else {
+        dashView.classList.remove('hidden');
+        navDash.className = activeCls;
+        renderDashboard();
+      }
+    }
+
+    function renderCurrentView() {
+      if (activeView === 'analytics') {
+        renderAnalytics();
+      } else if (activeView === 'mocks') {
+        renderMockTests();
+      } else if (activeView === 'exams') {
+        renderExamDates();
+      } else {
+        renderDashboard();
+      }
+    }
+
+    // --- RENDERING: DASHBOARD ---
+    function renderDashboard() {
+      document.getElementById('datePicker').value = selectedDate;
+      document.getElementById('dateContextLabel').textContent = describeDate(selectedDate);
+      document.getElementById('combinedDateShort').textContent = selectedDate;
+
+      const eStats = getOfficerDayStats('ekta', selectedDate);
+      const rStats = getOfficerDayStats('rohit', selectedDate);
+      const combinedDone = eStats.done + rStats.done;
+      const combinedTotal = eStats.total + rStats.total;
+      const combinedPct = combinedTotal === 0 ? 0 : Math.round((combinedDone / combinedTotal) * 100);
+
+      document.getElementById('combinedProgressText').textContent = `${combinedPct}% (${combinedDone} / ${combinedTotal})`;
+      document.getElementById('combinedProgressBar').style.width = `${combinedPct}%`;
+
+      const merged = getMergedStreakAndFault();
+      document.getElementById('mergedStreakCount').textContent = merged.streak;
+
+      const faultBanner = document.getElementById('mergedFaultBanner');
+      faultBanner.textContent = merged.message;
+      const toneMap = {
+        success: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        info: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+        warning: 'bg-amber-50 text-amber-800 border-amber-200',
+        danger: 'bg-rose-50 text-rose-700 border-rose-200',
+        neutral: 'bg-slate-50 text-slate-600 border-slate-200'
+      };
+      faultBanner.className = `text-xs sm:text-sm font-medium px-3 py-2 rounded-xl border ${toneMap[merged.tone] || toneMap.neutral}`;
+
+      const grid = document.getElementById('officersGrid');
+      grid.innerHTML = '';
+      OFFICERS.forEach(officer => {
+        grid.appendChild(buildOfficerCard(officer));
+      });
+    }
+
+    function buildOfficerCard(officer) {
+      const habits = appData.habits.filter(h => h.officer === officer.id);
+      const checkedHabitIds = new Set(
+        appData.habitLogs
+          .filter(l => l.officer === officer.id && l.log_date === selectedDate)
+          .map(l => l.habit_id)
+      );
+
+      const goals = appData.dailyGoals
+        .filter(g => g.officer === officer.id && g.goal_date === selectedDate)
+        .sort((a, b) => (PRIORITIES[a.priority]?.rank || 9) - (PRIORITIES[b.priority]?.rank || 9));
+
+      const stats = getOfficerDayStats(officer.id, selectedDate);
+      const streak = getOfficerStreak(officer.id);
+
+      const section = document.createElement('section');
+      section.className = 'bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-6 flex flex-col gap-5';
+
+      const header = document.createElement('div');
+      header.className = 'space-y-3 border-b border-slate-100 pb-4';
+      header.innerHTML = `
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <span class="px-3 py-1 rounded-full text-sm font-bold border ${officer.badgeBg}">${officer.name}</span>
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-1 rounded-full text-xs font-bold border ${
+              stats.isComplete
+                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                : 'bg-slate-100 text-slate-700 border-slate-200'
+            }">${stats.pct}% (${stats.done}/${stats.total})</span>
+            <div class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-xs font-semibold">
+              <span>🔥</span>
+              <span>${streak} day streak</span>
+            </div>
+          </div>
+        </div>
+        <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+          <div class="h-full ${officer.barColor} rounded-full transition-all duration-300" style="width: ${stats.pct}%"></div>
+        </div>
+      `;
+      section.appendChild(header);
+
+      // Exam Countdown Banner(s) for this officer
+      const officerExams = (appData.examDates || [])
+        .filter(e => e.officer === officer.id || e.officer === 'both')
+        .slice()
+        .sort((a, b) => a.exam_date.localeCompare(b.exam_date));
+      if (officerExams.length > 0) {
+        const countdownWrap = document.createElement('div');
+        countdownWrap.className = 'grid grid-cols-1 sm:grid-cols-2 gap-2.5';
+        officerExams.forEach(ex => {
+          const c = getCountdownParts(ex.exam_date);
+          const box = document.createElement('div');
+          box.className = `rounded-xl border p-3 flex items-center justify-between gap-3 ${
+            c.isPast
+              ? 'bg-slate-50 border-slate-200 text-slate-500'
+              : c.isToday
+                ? 'bg-rose-50 border-rose-300 text-rose-800'
+                : 'bg-gradient-to-br from-indigo-50 to-sky-50 border-indigo-200 text-slate-900'
+          }`;
+          const bigLabel = c.isPast ? 'Done' : (c.isToday ? 'TODAY' : c.dayDiff);
+          const subLabel = c.isPast ? 'Exam passed' : (c.isToday ? 'Exam Day!' : 'DAYS LEFT');
+          box.innerHTML = `
+            <div class="min-w-0">
+              <p class="text-xs font-bold uppercase tracking-wide text-indigo-700 truncate">${ex.exam_name}</p>
+              <p class="text-[11px] font-medium text-slate-500 mt-0.5">${ex.exam_date}</p>
+              ${!c.isPast && !c.isToday ? `<p class="text-[11px] font-mono font-semibold text-slate-600 mt-1" data-countdown-date="${ex.exam_date}">${c.hrs}:${c.mins}:${c.secs}</p>` : ''}
+            </div>
+            <div class="text-right shrink-0">
+              <p class="text-2xl sm:text-3xl font-extrabold leading-none text-indigo-700">${bigLabel}</p>
+              <p class="text-[10px] font-bold tracking-wider uppercase text-slate-500 mt-1">${subLabel}</p>
+            </div>
+          `;
+          countdownWrap.appendChild(box);
+        });
+        section.appendChild(countdownWrap);
+      }
+
+      // Habits Subsection
+      const habitsBlock = document.createElement('div');
+      habitsBlock.className = 'space-y-3';
+      habitsBlock.innerHTML = `
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-bold uppercase tracking-wide text-slate-700">Daily Habits</h2>
+          <span class="text-xs font-medium text-slate-500">${stats.habitDone} / ${stats.habitTotal} done</span>
+        </div>
+      `;
+
+      const addHabitForm = document.createElement('form');
+      addHabitForm.className = 'flex gap-2';
+      const habitInput = document.createElement('input');
+      habitInput.type = 'text';
+      habitInput.placeholder = 'Add daily habit...';
+      habitInput.className = 'flex-1 px-3 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500';
+      const habitAddBtn = document.createElement('button');
+      habitAddBtn.type = 'submit';
+      habitAddBtn.textContent = 'Add';
+      habitAddBtn.className = 'px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition shrink-0';
+      addHabitForm.append(habitInput, habitAddBtn);
+      addHabitForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const val = habitInput.value.trim();
+        if (!val) return;
+        addHabit(officer.id, val);
+      });
+      habitsBlock.appendChild(addHabitForm);
+
+      const habitList = document.createElement('ul');
+      habitList.className = 'space-y-2';
+      if (habits.length === 0) {
+        const empty = document.createElement('li');
+        empty.className = 'text-xs text-slate-400 text-center py-3';
+        empty.textContent = 'No habits yet. Add one above.';
+        habitList.appendChild(empty);
+      } else {
+        habits.forEach(habit => {
+          const isChecked = checkedHabitIds.has(habit.id);
+          const isEditing = editingItem && editingItem.type === 'habit' && editingItem.id === habit.id;
+          const li = document.createElement('li');
+          li.className = `flex items-center justify-between gap-2 p-2.5 rounded-xl border ${
+            isChecked ? 'bg-indigo-50/50 border-indigo-200' : 'bg-white border-slate-200'
+          }`;
+
+          if (isEditing) {
+            const editForm = document.createElement('form');
+            editForm.className = 'flex items-center gap-2 w-full';
+            const editIn = document.createElement('input');
+            editIn.type = 'text';
+            editIn.value = habit.name;
+            editIn.className = 'flex-1 px-2.5 py-1.5 rounded-lg border border-indigo-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500';
+            const saveBtn = document.createElement('button');
+            saveBtn.type = 'submit';
+            saveBtn.textContent = 'Save';
+            saveBtn.className = 'px-2.5 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold';
+            const cancelBtn = document.createElement('button');
+            cancelBtn.type = 'button';
+            cancelBtn.textContent = 'Cancel';
+            cancelBtn.className = 'px-2 py-1.5 rounded-lg text-slate-500 hover:bg-slate-100 text-xs font-medium';
+            cancelBtn.addEventListener('click', () => { editingItem = null; renderDashboard(); });
+            editForm.addEventListener('submit', (e) => {
+              e.preventDefault();
+              const val = editIn.value.trim();
+              if (val) updateHabitName(habit.id, val);
+            });
+            editForm.append(editIn, saveBtn, cancelBtn);
+            li.appendChild(editForm);
+          } else {
+            const label = document.createElement('label');
+            label.className = 'flex items-center gap-2.5 flex-1 cursor-pointer select-none min-w-0';
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.checked = isChecked;
+            cb.className = 'w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer shrink-0';
+            cb.addEventListener('change', () => toggleHabitLog(officer.id, habit.id));
+            const span = document.createElement('span');
+            span.textContent = habit.name;
+            span.className = `text-sm font-medium truncate ${isChecked ? 'line-through text-slate-400' : 'text-slate-800'}`;
+            label.append(cb, span);
+
+            const actions = document.createElement('div');
+            actions.className = 'flex items-center gap-1 shrink-0';
+            const editBtn = document.createElement('button');
+            editBtn.type = 'button';
+            editBtn.textContent = 'Edit';
+            editBtn.className = 'text-xs font-medium text-slate-500 hover:text-indigo-600 px-2 py-1 rounded-lg hover:bg-indigo-50 transition';
+            editBtn.addEventListener('click', () => { editingItem = { type: 'habit', id: habit.id }; renderDashboard(); });
+            const delBtn = document.createElement('button');
+            delBtn.type = 'button';
+            delBtn.textContent = 'Delete';
+            delBtn.className = 'text-xs font-medium text-slate-400 hover:text-rose-600 px-2 py-1 rounded-lg hover:bg-rose-50 transition';
+            delBtn.addEventListener('click', () => deleteHabit(habit.id));
+            actions.append(editBtn, delBtn);
+
+            li.append(label, actions);
+          }
+          habitList.appendChild(li);
+        });
+      }
+      habitsBlock.appendChild(habitList);
+      section.appendChild(habitsBlock);
+
+      // Daily Goals Subsection
+      const goalsBlock = document.createElement('div');
+      goalsBlock.className = 'space-y-3 border-t border-slate-100 pt-5';
+
+      const goalsHeader = document.createElement('div');
+      goalsHeader.className = 'flex items-center justify-between';
+      goalsHeader.innerHTML = `
+        <h2 class="text-sm font-bold uppercase tracking-wide text-slate-700">Daily Goals (${selectedDate})</h2>
+        <span class="text-xs font-medium text-slate-500">${stats.goalDone} / ${stats.goalTotal} done</span>
+      `;
+      goalsBlock.appendChild(goalsHeader);
+
+      const addGoalForm = document.createElement('form');
+      addGoalForm.className = 'flex flex-col sm:flex-row gap-2';
+      const goalInput = document.createElement('input');
+      goalInput.type = 'text';
+      goalInput.placeholder = `Add goal for ${selectedDate}...`;
+      goalInput.className = 'flex-1 px-3 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500';
+      const prioritySelect = document.createElement('select');
+      prioritySelect.className = 'px-2.5 py-2 rounded-xl border border-slate-300 text-xs font-medium text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500';
+      Object.entries(PRIORITIES).forEach(([key, meta]) => {
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = meta.label;
+        prioritySelect.appendChild(opt);
+      });
+      prioritySelect.value = 'important';
+
+      const goalAddBtn = document.createElement('button');
+      goalAddBtn.type = 'submit';
+      goalAddBtn.textContent = 'Add Goal';
+      goalAddBtn.className = 'px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold transition shrink-0';
+
+      addGoalForm.append(goalInput, prioritySelect, goalAddBtn);
+      addGoalForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const title = goalInput.value.trim();
+        if (!title) return;
+        addGoal(officer.id, title, prioritySelect.value);
+      });
+      goalsBlock.appendChild(addGoalForm);
+
+      const goalList = document.createElement('ul');
+      goalList.className = 'space-y-2';
+      if (goals.length === 0) {
+        const empty = document.createElement('li');
+        empty.className = 'text-xs text-slate-400 text-center py-3';
+        empty.textContent = `No goals scheduled for ${selectedDate}.`;
+        goalList.appendChild(empty);
+      } else {
+        goals.forEach(goal => {
+          const pMeta = PRIORITIES[goal.priority] || PRIORITIES.important;
+          const isEditing = editingItem && editingItem.type === 'goal' && editingItem.id === goal.id;
+          const li = document.createElement('li');
+          li.className = `flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-xl border ${
+            goal.completed ? 'bg-slate-50 border-slate-200' : 'bg-white border-slate-200'
+          }`;
+
+          if (isEditing) {
+            const editForm = document.createElement('form');
+            editForm.className = 'flex flex-wrap items-center gap-2 w-full';
+            const editIn = document.createElement('input');
+            editIn.type = 'text';
+            editIn.value = goal.title;
+            editIn.className = 'flex-1 min-w-[140px] px-2.5 py-1.5 rounded-lg border border-indigo-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500';
+            const editSel = document.createElement('select');
+            editSel.className = 'px-2 py-1.5 rounded-lg border border-slate-300 text-xs font-medium bg-white';
+            Object.entries(PRIORITIES).forEach(([key, meta]) => {
+              const opt = document.createElement('option');
+              opt.value = key;
+              opt.textContent = meta.label;
+              editSel.appendChild(opt);
+            });
+            editSel.value = goal.priority;
+            const saveBtn = document.createElement('button');
+            saveBtn.type = 'submit';
+            saveBtn.textContent = 'Save';
+            saveBtn.className = 'px-2.5 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold';
+            const cancelBtn = document.createElement('button');
+            cancelBtn.type = 'button';
+            cancelBtn.textContent = 'Cancel';
+            cancelBtn.className = 'px-2 py-1.5 rounded-lg text-slate-500 hover:bg-slate-100 text-xs font-medium';
+            cancelBtn.addEventListener('click', () => { editingItem = null; renderDashboard(); });
+            editForm.addEventListener('submit', (e) => {
+              e.preventDefault();
+              const val = editIn.value.trim();
+              if (val) updateGoal(goal.id, val, editSel.value);
+            });
+            editForm.append(editIn, editSel, saveBtn, cancelBtn);
+            li.appendChild(editForm);
+          } else {
+            const left = document.createElement('label');
+            left.className = 'flex items-center gap-2.5 flex-1 cursor-pointer select-none min-w-0';
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.checked = goal.completed;
+            cb.className = 'w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer shrink-0';
+            cb.addEventListener('change', () => toggleGoal(goal.id));
+            const span = document.createElement('span');
+            span.textContent = goal.title;
+            span.className = `text-sm font-medium truncate ${goal.completed ? 'line-through text-slate-400' : 'text-slate-800'}`;
+            left.append(cb, span);
+
+            const right = document.createElement('div');
+            right.className = 'flex items-center gap-1.5 shrink-0 flex-wrap';
+            const pBadge = document.createElement('span');
+            pBadge.textContent = pMeta.label;
+            pBadge.className = `px-2 py-0.5 rounded-full text-[11px] font-semibold border ${pMeta.classes}`;
+            const editBtn = document.createElement('button');
+            editBtn.type = 'button';
+            editBtn.textContent = 'Edit';
+            editBtn.className = 'text-xs font-medium text-slate-500 hover:text-indigo-600 px-2 py-1 rounded-lg hover:bg-indigo-50 transition';
+            editBtn.addEventListener('click', () => { editingItem = { type: 'goal', id: goal.id }; renderDashboard(); });
+            const delBtn = document.createElement('button');
+            delBtn.type = 'button';
+            delBtn.textContent = 'Delete';
+            delBtn.className = 'text-xs font-medium text-slate-400 hover:text-rose-600 px-2 py-1 rounded-lg hover:bg-rose-50 transition';
+            delBtn.addEventListener('click', () => deleteGoal(goal.id));
+            right.append(pBadge, editBtn, delBtn);
+
+            li.append(left, right);
+          }
+          goalList.appendChild(li);
+        });
+      }
+      goalsBlock.appendChild(goalList);
+      section.appendChild(goalsBlock);
+
+      return section;
+    }
+
+    // --- RENDERING: ANALYTICS ---
+    function renderAnalytics() {
+      const ektaStats = getOfficerLifetimeStats('ekta');
+      const rohitStats = getOfficerLifetimeStats('rohit');
+      const combined = {
+        created: ektaStats.created + rohitStats.created,
+        completed: ektaStats.completed + rohitStats.completed,
+        left: ektaStats.left + rohitStats.left
+      };
+
+      // 1. Combined Stats Cards
+      const combinedGrid = document.getElementById('combinedStatsGrid');
+      combinedGrid.innerHTML = `
+        <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+          <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Total Tasks Created</p>
+          <p class="text-2xl font-bold text-slate-900 mt-1">${combined.created}</p>
+        </div>
+        <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200">
+          <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Total Completed</p>
+          <p class="text-2xl font-bold text-emerald-700 mt-1">${combined.completed}</p>
+        </div>
+        <div class="p-4 rounded-xl bg-amber-50 border border-amber-200">
+          <p class="text-xs font-semibold uppercase tracking-wide text-amber-700">Total Tasks Left</p>
+          <p class="text-2xl font-bold text-amber-700 mt-1">${combined.left}</p>
+        </div>
+      `;
+
+      // 2. Separate Officer Cards (Rohit first, then Ekta, or side-by-side)
+      const sepGrid = document.getElementById('separateStatsGrid');
+      sepGrid.innerHTML = '';
+      const ordered = [
+        { id: 'rohit', name: 'Officer Rohit', badge: 'bg-indigo-50 text-indigo-700 border-indigo-200', stats: rohitStats },
+        { id: 'ekta', name: 'Officer Ekta', badge: 'bg-rose-50 text-rose-700 border-rose-200', stats: ektaStats }
+      ];
+      ordered.forEach(item => {
+        const card = document.createElement('section');
+        card.className = 'bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-4';
+        card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="px-3 py-1 rounded-full text-sm font-bold border ${item.badge}">${item.name}</span>
+            <span class="text-xs font-semibold text-slate-500">Individual Summary</span>
+          </div>
+          <div class="grid grid-cols-3 gap-3 text-center">
+            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+              <p class="text-[11px] font-semibold uppercase text-slate-500">Created</p>
+              <p class="text-xl font-bold text-slate-900 mt-0.5">${item.stats.created}</p>
+            </div>
+            <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200">
+              <p class="text-[11px] font-semibold uppercase text-emerald-700">Completed</p>
+              <p class="text-xl font-bold text-emerald-700 mt-0.5">${item.stats.completed}</p>
+            </div>
+            <div class="p-3 rounded-xl bg-amber-50 border border-amber-200">
+              <p class="text-[11px] font-semibold uppercase text-amber-700">Left</p>
+              <p class="text-xl font-bold text-amber-700 mt-0.5">${item.stats.left}</p>
+            </div>
+          </div>
+        `;
+        sepGrid.appendChild(card);
+      });
+
+      // 3. Big 1-Month Color-Coded Calendar
+      renderMonthlyCalendar();
+    }
+
+    function renderMonthlyCalendar() {
+      const year = calendarMonth.getFullYear();
+      const month = calendarMonth.getMonth();
+      const monthLabel = calendarMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+      document.getElementById('calendarMonthLabel').textContent = monthLabel;
+
+      const firstDayOfWeek = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const todayKey = getTodayKey();
+
+      const grid = document.getElementById('monthlyCalendarGrid');
+      grid.innerHTML = '';
+
+      // Leading empty cells
+      for (let i = 0; i < firstDayOfWeek; i++) {
+        const blank = document.createElement('div');
+        blank.className = 'h-16 sm:h-20 rounded-xl bg-slate-50/60';
+        grid.appendChild(blank);
+      }
+
+      // Day cells
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dt = new Date(year, month, day);
+        const dateKey = formatDateKey(dt);
+        const eStats = getOfficerDayStats('ekta', dateKey);
+        const rStats = getOfficerDayStats('rohit', dateKey);
+
+        const eDone = eStats.isComplete;
+        const rDone = rStats.isComplete;
+
+        let cellClasses = 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50';
+        let statusText = '—';
+        let dayKind = 'neutral'; // 'neutral' | 'green' | 'purple' | 'red'
+
+        if (dateKey < TRACKING_START_DATE) {
+          cellClasses = 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50';
+          statusText = 'Before start';
+        } else if (dateKey >= todayKey) {
+          cellClasses = 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50';
+          statusText = dateKey === todayKey ? 'In progress' : 'Upcoming';
+        } else if (eDone && rDone) {
+          cellClasses = 'bg-emerald-500 text-white border-emerald-600 hover:bg-emerald-600';
+          statusText = 'Both 100%';
+          dayKind = 'green';
+        } else if (eDone || rDone) {
+          cellClasses = 'bg-purple-500 text-white border-purple-600 hover:bg-purple-600';
+          statusText = eDone ? 'Ekta 100%' : 'Rohit 100%';
+          dayKind = 'purple';
+        } else {
+          cellClasses = 'bg-rose-500 text-white border-rose-600 hover:bg-rose-600';
+          statusText = 'Neither 100%';
+          dayKind = 'red';
+        }
+
+        const savedReason = (appData.streakReasons || []).find(r => r.reason_date === dateKey);
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `h-16 sm:h-20 rounded-xl border p-1.5 sm:p-2 flex flex-col items-start justify-between transition text-left cursor-pointer ${cellClasses} ${
+          dateKey === todayKey ? 'ring-2 ring-offset-2 ring-slate-900' : ''
+        }`;
+        btn.title = savedReason
+          ? `${dateKey}: ${statusText} — Reason: ${savedReason.reason}`
+          : `${dateKey}: ${statusText} (Ekta ${eStats.pct}%, Rohit ${rStats.pct}%)`;
+        btn.innerHTML = `
+          <div class="flex items-center justify-between w-full">
+            <span class="text-xs sm:text-sm font-bold">${day}</span>
+            ${savedReason ? '<span class="text-[11px]" title="Reason saved">📝</span>' : ''}
+          </div>
+          <span class="text-[10px] sm:text-[11px] font-medium opacity-95 truncate w-full">${statusText}</span>
+        `;
+        btn.addEventListener('click', () => {
+          if (dayKind === 'purple' || dayKind === 'red') {
+            openReasonModal(dateKey, dayKind, eDone, rDone);
+          } else {
+            selectedDate = dateKey;
+            switchView('dashboard');
+          }
+        });
+        grid.appendChild(btn);
+      }
+
+      renderStreakReasonsList();
+    }
+
+    function renderStreakReasonsList() {
+      const list = document.getElementById('streakReasonsList');
+      if (!list) return;
+      list.innerHTML = '';
+      const sorted = (appData.streakReasons || []).slice().sort((a, b) => b.reason_date.localeCompare(a.reason_date));
+      if (sorted.length === 0) {
+        const empty = document.createElement('li');
+        empty.className = 'text-xs text-slate-400 text-center py-4';
+        empty.textContent = 'No streak-break reasons logged yet. Click any purple or red calendar date to add one.';
+        list.appendChild(empty);
+        return;
+      }
+      sorted.forEach(r => {
+        const whoLabel = r.who_missed === 'both' ? 'Both Officers' : (r.who_missed === 'ekta' ? 'Officer Ekta' : 'Officer Rohit');
+        const whoCls = r.who_missed === 'both'
+          ? 'bg-rose-50 text-rose-700 border-rose-200'
+          : 'bg-purple-50 text-purple-700 border-purple-200';
+        const li = document.createElement('li');
+        li.className = 'p-3 rounded-xl border border-slate-200 bg-slate-50/70 flex flex-wrap items-center justify-between gap-2';
+        li.innerHTML = `
+          <div class="space-y-0.5 min-w-0 flex-1">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="text-xs font-bold text-slate-800">${r.reason_date}</span>
+              <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold border ${whoCls}">Missed: ${whoLabel}</span>
+            </div>
+            <p class="text-sm text-slate-700">${r.reason}</p>
+          </div>
+        `;
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.textContent = 'Delete';
+        delBtn.className = 'text-xs font-medium text-slate-400 hover:text-rose-600 px-2 py-1 rounded-lg hover:bg-rose-50 transition shrink-0';
+        delBtn.addEventListener('click', () => deleteStreakReason(r.id));
+        li.appendChild(delBtn);
+        list.appendChild(li);
+      });
+    }
+
+    // --- RENDERING: MOCK TESTS ---
+    const EXAM_PATTERNS = {
+      'SSC CGL': {
+        Pre: {
+          fullTotal: 200,
+          subjects: { Math: 50, Reasoning: 50, English: 50, 'GK/GS': 50 },
+          hasComputerQualifying: false
+        },
+        Mains: {
+          fullTotal: 390,
+          subjects: { Math: 90, Reasoning: 90, English: 135, 'GK/GS': 75, Computer: 60 },
+          meritSubjects: { Math: 90, Reasoning: 90, English: 135, 'GK/GS': 75 },
+          hasComputerQualifying: true,
+          computerMax: 60
+        }
+      },
+      'SSC CHSL': {
+        Pre: {
+          fullTotal: 200,
+          subjects: { Math: 50, Reasoning: 50, English: 50, 'GK/GS': 50 },
+          hasComputerQualifying: false
+        },
+        Mains: {
+          fullTotal: 360, // Merit total: 90 + 90 + 120 + 60 = 360 (Computer 45 is qualifying)
+          subjects: { Math: 90, Reasoning: 90, English: 120, 'GK/GS': 60, Computer: 45 },
+          meritSubjects: { Math: 90, Reasoning: 90, English: 120, 'GK/GS': 60 },
+          hasComputerQualifying: true,
+          computerMax: 45
+        }
+      }
+    };
+
+    function renderMockTests() {
+      const grid = document.getElementById('mocksGrid');
+      grid.innerHTML = '';
+      OFFICERS.forEach(officer => {
+        grid.appendChild(buildOfficerMockCard(officer));
+      });
+    }
+
+    function buildOfficerMockCard(officer) {
+      const tests = (appData.mockTests || [])
+        .filter(t => t.officer === officer.id)
+        .slice()
+        .sort((a, b) => a.test_date.localeCompare(b.test_date) || a.id.localeCompare(b.id));
+
+      const numberedTests = tests.map((t, idx) => ({ ...t, testNumber: idx + 1 })).reverse();
+
+      const section = document.createElement('section');
+      section.className = 'bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-6 flex flex-col gap-5';
+
+      // Header
+      const header = document.createElement('div');
+      header.className = 'flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-4';
+      header.innerHTML = `
+        <span class="px-3 py-1 rounded-full text-sm font-bold border ${officer.badgeBg}">${officer.name}</span>
+        <span class="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">
+          Total Tests Given: ${tests.length}
+        </span>
+      `;
+      section.appendChild(header);
+
+      // Officer Mock Test Breakdown Stats
+      const hasCutoffVal = (t) => t.cutoff_marks !== null && t.cutoff_marks !== undefined && !Number.isNaN(Number(t.cutoff_marks));
+      const isCleared = (t) => hasCutoffVal(t) && Number(t.scored_marks) >= Number(t.cutoff_marks);
+
+      const fullCount = tests.filter(t => t.test_type === 'Full').length;
+      const sectionalCount = tests.filter(t => t.test_type === 'Sectional').length;
+      const totalCutoffCleared = tests.filter(isCleared).length;
+      const sectionalCutoffCleared = tests.filter(t => t.test_type === 'Sectional' && isCleared(t)).length;
+      const fullCutoffCleared = tests.filter(t => t.test_type === 'Full' && isCleared(t)).length;
+
+      const statsGrid = document.createElement('div');
+      statsGrid.className = 'grid grid-cols-2 sm:grid-cols-3 gap-2.5';
+      statsGrid.innerHTML = `
+        <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
+          <p class="text-[11px] font-semibold uppercase text-slate-500">Total Given</p>
+          <p class="text-lg font-bold text-slate-900">${tests.length}</p>
+        </div>
+        <div class="p-2.5 rounded-xl bg-indigo-50/70 border border-indigo-200 text-center">
+          <p class="text-[11px] font-semibold uppercase text-indigo-700">Full Mocks</p>
+          <p class="text-lg font-bold text-indigo-700">${fullCount}</p>
+        </div>
+        <div class="p-2.5 rounded-xl bg-sky-50/70 border border-sky-200 text-center">
+          <p class="text-[11px] font-semibold uppercase text-sky-700">Sectional</p>
+          <p class="text-lg font-bold text-sky-700">${sectionalCount}</p>
+        </div>
+        <div class="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-center">
+          <p class="text-[11px] font-semibold uppercase text-emerald-700">Cutoffs Cleared</p>
+          <p class="text-lg font-bold text-emerald-700">${totalCutoffCleared}</p>
+        </div>
+        <div class="p-2.5 rounded-xl bg-emerald-50/60 border border-emerald-200 text-center">
+          <p class="text-[11px] font-semibold uppercase text-emerald-700">Full Cleared</p>
+          <p class="text-lg font-bold text-emerald-700">${fullCutoffCleared}</p>
+        </div>
+        <div class="p-2.5 rounded-xl bg-emerald-50/60 border border-emerald-200 text-center">
+          <p class="text-[11px] font-semibold uppercase text-emerald-700">Sectional Cleared</p>
+          <p class="text-lg font-bold text-emerald-700">${sectionalCutoffCleared}</p>
+        </div>
+      `;
+      section.appendChild(statsGrid);
+
+      const editingMock = editingItem && editingItem.type === 'mock'
+        ? numberedTests.find(t => t.id === editingItem.id)
+        : null;
+
+      // Add / Edit Mock Test Result Form
+      const form = document.createElement('form');
+      form.className = editingMock
+        ? 'bg-indigo-50/70 rounded-xl border-2 border-indigo-300 p-4 space-y-3'
+        : 'bg-slate-50 rounded-xl border border-slate-200 p-4 space-y-3';
+      form.innerHTML = `
+        <div class="flex items-center justify-between gap-2">
+          <h3 class="text-sm font-bold text-slate-800">${editingMock ? `Edit Mock Test #${editingMock.testNumber}` : 'Add Mock Test Result'}</h3>
+          ${editingMock ? '<button type="button" data-role="cancelMockEdit" class="text-xs font-semibold text-slate-500 hover:text-slate-800 px-2 py-1 rounded-lg hover:bg-white transition">Cancel Edit</button>' : ''}
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div>
+            <label class="block text-[11px] font-semibold uppercase text-slate-500 mb-1">Exam</label>
+            <select data-role="exam" class="w-full px-2.5 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium">
+              <option value="SSC CGL">SSC CGL</option>
+              <option value="SSC CHSL">SSC CHSL</option>
+              <option value="SSC MTS">SSC MTS</option>
+              <option value="SSC CPO">SSC CPO</option>
+              <option value="SSC Stenographer">SSC Stenographer</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div data-role="customExamWrap" class="hidden">
+            <label class="block text-[11px] font-semibold uppercase text-slate-500 mb-1">Other Exam Name</label>
+            <input data-role="customExam" type="text" placeholder="e.g. RRB PO, Bihar SI..." class="w-full px-2.5 py-2 rounded-lg border border-slate-300 bg-white text-sm" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          <div>
+            <label class="block text-[11px] font-semibold uppercase text-slate-500 mb-1">Stage</label>
+            <select data-role="stage" class="w-full px-2.5 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium">
+              <option value="Pre">Pre (Tier 1)</option>
+              <option value="Mains">Mains (Tier 2)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold uppercase text-slate-500 mb-1">Type</label>
+            <select data-role="type" class="w-full px-2.5 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium">
+              <option value="Full">Full Mock</option>
+              <option value="Sectional">Sectional</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold uppercase text-slate-500 mb-1">Test Date</label>
+            <input data-role="date" type="date" value="${getTodayKey()}" class="w-full px-2.5 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium" required />
+          </div>
+        </div>
+
+        <!-- Full Mock 4-Subject Panel -->
+        <div data-role="fullPanel" class="space-y-2.5 pt-1">
+          <div class="flex items-center justify-between text-xs font-semibold text-slate-600">
+            <span>Enter Subject Marks</span>
+            <span data-role="fullTotalLabel" class="text-indigo-700">Merit Total: 0 / 200</span>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div>
+              <label class="block text-[11px] font-medium text-slate-500 mb-0.5">Math <span data-role="maxMath">/ 50</span></label>
+              <input data-role="math" type="number" step="0.25" min="0" placeholder="0" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white text-sm" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-medium text-slate-500 mb-0.5">Reasoning <span data-role="maxReas">/ 50</span></label>
+              <input data-role="reasoning" type="number" step="0.25" min="0" placeholder="0" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white text-sm" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-medium text-slate-500 mb-0.5">English <span data-role="maxEng">/ 50</span></label>
+              <input data-role="english" type="number" step="0.25" min="0" placeholder="0" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white text-sm" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-medium text-slate-500 mb-0.5">GK/GS <span data-role="maxGk">/ 50</span></label>
+              <input data-role="gkgs" type="number" step="0.25" min="0" placeholder="0" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white text-sm" />
+            </div>
+          </div>
+
+          <!-- Mains Computer Qualifying Only -->
+          <div data-role="computerQualRow" class="hidden flex items-center justify-between bg-white px-3 py-2 rounded-lg border border-slate-200">
+            <span class="text-xs font-semibold text-slate-700">Computer Knowledge (<span data-role="compMaxLabel">60</span> marks — Qualifying Only)</span>
+            <select data-role="computerQual" class="px-2.5 py-1 rounded-lg border border-slate-300 bg-white text-xs font-semibold text-slate-800">
+              <option value="true">Qualified</option>
+              <option value="false">Not Qualified</option>
+            </select>
+          </div>
+
+          <div data-role="customFullMaxRow" class="hidden">
+            <label class="block text-[11px] font-semibold uppercase text-slate-500 mb-1">Full Marks (Total)</label>
+            <input data-role="customFullMax" type="number" min="1" placeholder="e.g. 100 or 200" value="200" class="w-40 px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white text-sm" />
+          </div>
+        </div>
+
+        <!-- Sectional Panel -->
+        <div data-role="sectionalPanel" class="hidden grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+          <div>
+            <label class="block text-[11px] font-semibold uppercase text-slate-500 mb-1">Subject</label>
+            <select data-role="subject" class="w-full px-2.5 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium">
+              <option value="Math">Math</option>
+              <option value="Reasoning">Reasoning</option>
+              <option value="English">English</option>
+              <option value="GK/GS">GK/GS</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold uppercase text-slate-500 mb-1">Marks Scored</label>
+            <input data-role="secScored" type="number" step="0.25" min="0" placeholder="0" class="w-full px-2.5 py-2 rounded-lg border border-slate-300 bg-white text-sm" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold uppercase text-slate-500 mb-1">Full Marks</label>
+            <input data-role="secMax" type="number" min="1" value="50" class="w-full px-2.5 py-2 rounded-lg border border-slate-300 bg-slate-100 text-sm font-semibold" readonly />
+          </div>
+        </div>
+
+        <!-- Cutoff Marks -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+          <div>
+            <label class="block text-[11px] font-semibold uppercase text-slate-500 mb-1">Cutoff Marks (Optional)</label>
+            <input data-role="cutoff" type="number" step="0.25" min="0" placeholder="e.g. 142.5" class="w-full px-2.5 py-2 rounded-lg border border-slate-300 bg-white text-sm" />
+          </div>
+          <div class="flex items-end">
+            <button type="submit" class="w-full py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition">
+              ${editingMock ? 'Save Changes' : 'Save Mock Test'}
+            </button>
+          </div>
+        </div>
+        <p data-role="mockError" class="hidden text-xs font-semibold text-rose-600 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2"></p>
+      `;
+
+      const examSel = form.querySelector('[data-role="exam"]');
+      const customExamWrap = form.querySelector('[data-role="customExamWrap"]');
+      const customExamIn = form.querySelector('[data-role="customExam"]');
+      const stageSel = form.querySelector('[data-role="stage"]');
+      const typeSel = form.querySelector('[data-role="type"]');
+      const dateIn = form.querySelector('[data-role="date"]');
+      const fullPanel = form.querySelector('[data-role="fullPanel"]');
+      const sectionalPanel = form.querySelector('[data-role="sectionalPanel"]');
+      const fullTotalLabel = form.querySelector('[data-role="fullTotalLabel"]');
+      const mathIn = form.querySelector('[data-role="math"]');
+      const reasIn = form.querySelector('[data-role="reasoning"]');
+      const engIn = form.querySelector('[data-role="english"]');
+      const gkIn = form.querySelector('[data-role="gkgs"]');
+      const maxMath = form.querySelector('[data-role="maxMath"]');
+      const maxReas = form.querySelector('[data-role="maxReas"]');
+      const maxEng = form.querySelector('[data-role="maxEng"]');
+      const maxGk = form.querySelector('[data-role="maxGk"]');
+      const computerQualRow = form.querySelector('[data-role="computerQualRow"]');
+      const compMaxLabel = form.querySelector('[data-role="compMaxLabel"]');
+      const computerQualSel = form.querySelector('[data-role="computerQual"]');
+      const customFullMaxRow = form.querySelector('[data-role="customFullMaxRow"]');
+      const customFullMaxIn = form.querySelector('[data-role="customFullMax"]');
+      const subSelect = form.querySelector('[data-role="subject"]');
+      const secScoredIn = form.querySelector('[data-role="secScored"]');
+      const secMaxIn = form.querySelector('[data-role="secMax"]');
+      const cutoffIn = form.querySelector('[data-role="cutoff"]');
+      const mockError = form.querySelector('[data-role="mockError"]');
+
+      function getActivePattern() {
+        return EXAM_PATTERNS[examSel.value]?.[stageSel.value] || null;
+      }
+
+      function syncSubjectOptions(pattern) {
+        const current = subSelect.value;
+        const list = pattern ? Object.keys(pattern.subjects) : ['Math', 'Reasoning', 'English', 'GK/GS'];
+        subSelect.innerHTML = '';
+        list.forEach(sub => {
+          const opt = document.createElement('option');
+          opt.value = sub;
+          opt.textContent = sub;
+          subSelect.appendChild(opt);
+        });
+        if (list.includes(current)) subSelect.value = current;
+      }
+
+      function syncMockFormUI() {
+        const isOther = examSel.value === 'Other';
+        customExamWrap.classList.toggle('hidden', !isOther);
+
+        const pattern = getActivePattern();
+        const isFull = typeSel.value === 'Full';
+
+        syncSubjectOptions(pattern);
+
+        if (isFull) {
+          fullPanel.classList.remove('hidden');
+          sectionalPanel.classList.add('hidden');
+
+          if (pattern) {
+            const subs = pattern.meritSubjects || pattern.subjects;
+            maxMath.textContent = `/ ${subs.Math}`;
+            maxReas.textContent = `/ ${subs.Reasoning}`;
+            maxEng.textContent = `/ ${subs.English}`;
+            maxGk.textContent = `/ ${subs['GK/GS']}`;
+            mathIn.max = subs.Math;
+            reasIn.max = subs.Reasoning;
+            engIn.max = subs.English;
+            gkIn.max = subs['GK/GS'];
+            customFullMaxRow.classList.add('hidden');
+            computerQualRow.classList.toggle('hidden', !pattern.hasComputerQualifying);
+            if (pattern.hasComputerQualifying) {
+              compMaxLabel.textContent = pattern.computerMax;
+            }
+          } else {
+            maxMath.textContent = '';
+            maxReas.textContent = '';
+            maxEng.textContent = '';
+            maxGk.textContent = '';
+            [mathIn, reasIn, engIn, gkIn].forEach(inp => inp.removeAttribute('max'));
+            computerQualRow.classList.add('hidden');
+            customFullMaxRow.classList.toggle('hidden', false);
+          }
+        } else {
+          fullPanel.classList.add('hidden');
+          sectionalPanel.classList.remove('hidden');
+
+          if (pattern && pattern.subjects[subSelect.value] !== undefined) {
+            secMaxIn.value = pattern.subjects[subSelect.value];
+            secMaxIn.readOnly = true;
+            secMaxIn.classList.add('bg-slate-100');
+            secMaxIn.classList.remove('bg-white');
+            secScoredIn.max = pattern.subjects[subSelect.value];
+          } else {
+            secMaxIn.readOnly = false;
+            secMaxIn.classList.remove('bg-slate-100');
+            secMaxIn.classList.add('bg-white');
+            secScoredIn.max = secMaxIn.value || '';
+          }
+        }
+        updateFullTotalPreview();
+      }
+
+      function updateFullTotalPreview() {
+        const m = parseFloat(mathIn.value) || 0;
+        const r = parseFloat(reasIn.value) || 0;
+        const e = parseFloat(engIn.value) || 0;
+        const g = parseFloat(gkIn.value) || 0;
+        const sum = +(m + r + e + g).toFixed(2);
+        const pattern = getActivePattern();
+        const maxM = pattern ? pattern.fullTotal : (parseFloat(customFullMaxIn.value) || 200);
+        fullTotalLabel.textContent = `Merit Total: ${sum} / ${maxM}`;
+      }
+
+      examSel.addEventListener('change', syncMockFormUI);
+      stageSel.addEventListener('change', syncMockFormUI);
+      typeSel.addEventListener('change', syncMockFormUI);
+      subSelect.addEventListener('change', syncMockFormUI);
+      [mathIn, reasIn, engIn, gkIn, customFullMaxIn].forEach(inp => inp.addEventListener('input', updateFullTotalPreview));
+
+      const cancelMockEditBtn = form.querySelector('[data-role="cancelMockEdit"]');
+      if (cancelMockEditBtn) {
+        cancelMockEditBtn.addEventListener('click', () => {
+          editingItem = null;
+          renderMockTests();
+        });
+      }
+
+      if (editingMock) {
+        const knownExams = ['SSC CGL', 'SSC CHSL', 'SSC MTS', 'SSC CPO', 'SSC Stenographer'];
+        if (knownExams.includes(editingMock.exam_name)) {
+          examSel.value = editingMock.exam_name;
+        } else {
+          examSel.value = 'Other';
+          customExamIn.value = editingMock.exam_name || '';
+        }
+        stageSel.value = editingMock.stage || 'Pre';
+        typeSel.value = editingMock.test_type || 'Full';
+        dateIn.value = editingMock.test_date || getTodayKey();
+        cutoffIn.value = (editingMock.cutoff_marks !== null && editingMock.cutoff_marks !== undefined) ? editingMock.cutoff_marks : '';
+        syncMockFormUI();
+
+        if (editingMock.test_type === 'Full') {
+          mathIn.value = editingMock.math_marks ?? '';
+          reasIn.value = editingMock.reasoning_marks ?? '';
+          engIn.value = editingMock.english_marks ?? '';
+          gkIn.value = editingMock.gkgs_marks ?? '';
+          customFullMaxIn.value = editingMock.total_marks || 200;
+          if (editingMock.computer_qualified !== null && editingMock.computer_qualified !== undefined) {
+            computerQualSel.value = editingMock.computer_qualified ? 'true' : 'false';
+          }
+          updateFullTotalPreview();
+        } else {
+          if (editingMock.subject) subSelect.value = editingMock.subject;
+          syncMockFormUI();
+          secScoredIn.value = editingMock.scored_marks ?? '';
+          secMaxIn.value = editingMock.total_marks || 50;
+        }
+      } else {
+        syncMockFormUI();
+      }
+
+      function showMockError(msg) {
+        mockError.textContent = msg;
+        mockError.classList.remove('hidden');
+      }
+
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        mockError.classList.add('hidden');
+        const examName = examSel.value === 'Other'
+          ? (customExamIn.value.trim() || 'Other')
+          : examSel.value;
+        const stage = stageSel.value;
+        const testType = typeSel.value;
+        const testDate = dateIn.value || getTodayKey();
+        const rawCutoff = cutoffIn.value.trim();
+        const cutoffMarks = rawCutoff === '' ? null : parseFloat(rawCutoff);
+        const pattern = getActivePattern();
+
+        if (testType === 'Full') {
+          const math = parseFloat(mathIn.value) || 0;
+          const reasoning = parseFloat(reasIn.value) || 0;
+          const english = parseFloat(engIn.value) || 0;
+          const gkgs = parseFloat(gkIn.value) || 0;
+          const scored = +(math + reasoning + english + gkgs).toFixed(2);
+          const total = pattern ? pattern.fullTotal : (parseFloat(customFullMaxIn.value) || 200);
+
+          if (math < 0 || reasoning < 0 || english < 0 || gkgs < 0) {
+            return showMockError('Marks cannot be negative.');
+          }
+          if (pattern) {
+            const subs = pattern.meritSubjects || pattern.subjects;
+            if (math > subs.Math) return showMockError(`Math marks (${math}) cannot exceed full marks (${subs.Math}).`);
+            if (reasoning > subs.Reasoning) return showMockError(`Reasoning marks (${reasoning}) cannot exceed full marks (${subs.Reasoning}).`);
+            if (english > subs.English) return showMockError(`English marks (${english}) cannot exceed full marks (${subs.English}).`);
+            if (gkgs > subs['GK/GS']) return showMockError(`GK/GS marks (${gkgs}) cannot exceed full marks (${subs['GK/GS']}).`);
+          }
+          if (scored > total) {
+            return showMockError(`Total obtained marks (${scored}) cannot exceed full marks (${total}).`);
+          }
+          if (cutoffMarks !== null && (cutoffMarks < 0 || cutoffMarks > total)) {
+            return showMockError(`Cutoff (${cutoffMarks}) must be between 0 and ${total}.`);
+          }
+
+          const computerQual = pattern && pattern.hasComputerQualifying
+            ? computerQualSel.value === 'true'
+            : null;
+
+          const payload = {
+            exam_name: examName,
+            test_date: testDate,
+            stage,
+            test_type: 'Full',
+            subject: null,
+            math_marks: math,
+            reasoning_marks: reasoning,
+            english_marks: english,
+            gkgs_marks: gkgs,
+            scored_marks: scored,
+            total_marks: total,
+            cutoff_marks: cutoffMarks,
+            computer_qualified: computerQual
+          };
+          if (editingMock) {
+            updateMockTest(editingMock.id, payload);
+          } else {
+            addMockTest({ id: `${officer.id}_m_${Date.now()}`, officer: officer.id, ...payload });
+          }
+        } else {
+          const scored = parseFloat(secScoredIn.value) || 0;
+          const total = pattern && pattern.subjects[subSelect.value] !== undefined
+            ? pattern.subjects[subSelect.value]
+            : (parseFloat(secMaxIn.value) || 50);
+
+          if (scored < 0) {
+            return showMockError('Marks cannot be negative.');
+          }
+          if (scored > total) {
+            return showMockError(`Obtained marks (${scored}) cannot exceed full marks (${total}).`);
+          }
+          if (cutoffMarks !== null && (cutoffMarks < 0 || cutoffMarks > total)) {
+            return showMockError(`Cutoff (${cutoffMarks}) must be between 0 and ${total}.`);
+          }
+
+          const payload = {
+            exam_name: examName,
+            test_date: testDate,
+            stage,
+            test_type: 'Sectional',
+            subject: subSelect.value,
+            math_marks: null,
+            reasoning_marks: null,
+            english_marks: null,
+            gkgs_marks: null,
+            scored_marks: scored,
+            total_marks: total,
+            cutoff_marks: cutoffMarks,
+            computer_qualified: null
+          };
+          if (editingMock) {
+            updateMockTest(editingMock.id, payload);
+          } else {
+            addMockTest({ id: `${officer.id}_m_${Date.now()}`, officer: officer.id, ...payload });
+          }
+        }
+      });
+
+      section.appendChild(form);
+
+      // Filter Controls & Panel
+      const fState = mockFilters[officer.id];
+      const filteredTests = numberedTests.filter(t => {
+        if (fState.exam !== 'ALL') {
+          if (fState.exam === 'Other') {
+            const known = ['SSC CGL', 'SSC CHSL', 'SSC MTS', 'SSC CPO', 'SSC Stenographer'];
+            if (known.includes(t.exam_name)) return false;
+          } else if (t.exam_name !== fState.exam) {
+            return false;
+          }
+        }
+        if (fState.stage !== 'ALL' && t.stage !== fState.stage) return false;
+        if (fState.type !== 'ALL' && t.test_type !== fState.type) return false;
+        if (fState.subjects.length > 0) {
+          if (t.test_type !== 'Sectional' || !fState.subjects.includes(t.subject)) return false;
+        }
+        if (fState.cutoff !== 'ALL') {
+          const cleared = isCleared(t);
+          const hasC = hasCutoffVal(t);
+          if (fState.cutoff === 'CLEARED' && !cleared) return false;
+          if (fState.cutoff === 'MISSED' && (!hasC || cleared)) return false;
+        }
+        return true;
+      });
+
+      const activeFilterCount = (fState.exam !== 'ALL' ? 1 : 0)
+        + (fState.stage !== 'ALL' ? 1 : 0)
+        + (fState.type !== 'ALL' ? 1 : 0)
+        + (fState.subjects.length > 0 ? 1 : 0)
+        + (fState.cutoff !== 'ALL' ? 1 : 0);
+
+      const filterBar = document.createElement('div');
+      filterBar.className = 'space-y-2.5';
+      filterBar.innerHTML = `
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-xs font-semibold text-slate-500">Showing ${filteredTests.length} of ${numberedTests.length} tests</span>
+          <button type="button" data-role="toggleFilterBtn" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition ${
+            activeFilterCount > 0
+              ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+              : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+          }">
+            <span>Filter${activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}</span>
+          </button>
+        </div>
+      `;
+
+      const filterPanel = document.createElement('div');
+      filterPanel.className = `${fState.open ? '' : 'hidden '}bg-slate-50 rounded-xl border border-slate-200 p-3.5 space-y-3`;
+      filterPanel.innerHTML = `
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <div>
+            <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Exam</label>
+            <select data-role="fExam" class="w-full px-2 py-1.5 rounded-lg border border-slate-300 bg-white text-xs font-medium">
+              <option value="ALL">All Exams</option>
+              <option value="SSC CGL">SSC CGL</option>
+              <option value="SSC CHSL">SSC CHSL</option>
+              <option value="SSC MTS">SSC MTS</option>
+              <option value="SSC CPO">SSC CPO</option>
+              <option value="SSC Stenographer">SSC Stenographer</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Stage</label>
+            <select data-role="fStage" class="w-full px-2 py-1.5 rounded-lg border border-slate-300 bg-white text-xs font-medium">
+              <option value="ALL">All Stages</option>
+              <option value="Pre">Pre</option>
+              <option value="Mains">Mains</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Type</label>
+            <select data-role="fType" class="w-full px-2 py-1.5 rounded-lg border border-slate-300 bg-white text-xs font-medium">
+              <option value="ALL">All Types</option>
+              <option value="Full">Full Mock</option>
+              <option value="Sectional">Sectional</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Cutoff</label>
+            <select data-role="fCutoff" class="w-full px-2 py-1.5 rounded-lg border border-slate-300 bg-white text-xs font-medium">
+              <option value="ALL">Any Cutoff</option>
+              <option value="CLEARED">Cleared</option>
+              <option value="MISSED">Not Cleared</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-bold uppercase text-slate-500">Sectional Subjects (Tick one or more)</span>
+            <button type="button" data-role="clearFiltersBtn" class="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800">Reset All</button>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            ${['Math', 'Reasoning', 'English', 'GK/GS', 'Computer'].map(sub => `
+              <label class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-xs font-medium text-slate-700 cursor-pointer select-none">
+                <input type="checkbox" data-role="fSub" value="${sub}" ${fState.subjects.includes(sub) ? 'checked' : ''} class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+                <span>${sub}</span>
+              </label>
+            `).join('')}
+          </div>
+        </div>
+      `;
+
+      const fExam = filterPanel.querySelector('[data-role="fExam"]');
+      const fStage = filterPanel.querySelector('[data-role="fStage"]');
+      const fType = filterPanel.querySelector('[data-role="fType"]');
+      const fCutoff = filterPanel.querySelector('[data-role="fCutoff"]');
+      fExam.value = fState.exam;
+      fStage.value = fState.stage;
+      fType.value = fState.type;
+      fCutoff.value = fState.cutoff;
+
+      filterBar.querySelector('[data-role="toggleFilterBtn"]').addEventListener('click', () => {
+        fState.open = !fState.open;
+        renderMockTests();
+      });
+      fExam.addEventListener('change', () => { fState.exam = fExam.value; renderMockTests(); });
+      fStage.addEventListener('change', () => { fState.stage = fStage.value; renderMockTests(); });
+      fType.addEventListener('change', () => { fState.type = fType.value; renderMockTests(); });
+      fCutoff.addEventListener('change', () => { fState.cutoff = fCutoff.value; renderMockTests(); });
+      filterPanel.querySelectorAll('[data-role="fSub"]').forEach(cb => {
+        cb.addEventListener('change', () => {
+          if (cb.checked) {
+            if (!fState.subjects.includes(cb.value)) fState.subjects.push(cb.value);
+          } else {
+            fState.subjects = fState.subjects.filter(x => x !== cb.value);
+          }
+          renderMockTests();
+        });
+      });
+      filterPanel.querySelector('[data-role="clearFiltersBtn"]').addEventListener('click', () => {
+        mockFilters[officer.id] = { open: true, exam: 'ALL', stage: 'ALL', type: 'ALL', subjects: [], cutoff: 'ALL' };
+        renderMockTests();
+      });
+
+      filterBar.appendChild(filterPanel);
+      section.appendChild(filterBar);
+
+      // Test History List
+      const list = document.createElement('ul');
+      list.className = 'space-y-2.5';
+      if (filteredTests.length === 0) {
+        const empty = document.createElement('li');
+        empty.className = 'text-xs text-slate-400 text-center py-6';
+        empty.textContent = numberedTests.length === 0 ? 'No mock tests logged yet.' : 'No mock tests match the selected filters.';
+        list.appendChild(empty);
+      } else {
+        filteredTests.forEach(t => {
+          const pct = t.total_marks > 0 ? Math.round((t.scored_marks / t.total_marks) * 100) : 0;
+          const hasCutoff = t.cutoff_marks !== null && t.cutoff_marks !== undefined && !Number.isNaN(Number(t.cutoff_marks));
+          const clearedCutoff = hasCutoff && Number(t.scored_marks) >= Number(t.cutoff_marks);
+          let cardBg = 'border-slate-200 bg-white';
+          if (hasCutoff) {
+            cardBg = clearedCutoff ? 'border-emerald-300 bg-emerald-50/80' : 'border-rose-200 bg-rose-50/70';
+          }
+          const li = document.createElement('li');
+          li.className = `p-3.5 rounded-xl border space-y-2 ${cardBg}`;
+
+          const topRow = document.createElement('div');
+          topRow.className = 'flex flex-wrap items-center justify-between gap-2';
+          const stageBadge = t.stage === 'Pre'
+            ? 'bg-sky-50 text-sky-700 border-sky-200'
+            : 'bg-purple-50 text-purple-700 border-purple-200';
+          const typeLabel = t.test_type === 'Full' ? 'Full Mock' : `Sectional • ${t.subject}`;
+          const examLabel = t.exam_name || 'SSC CGL';
+
+          let cutoffHtml = '';
+          if (t.cutoff_marks !== null && t.cutoff_marks !== undefined && !Number.isNaN(Number(t.cutoff_marks))) {
+            const cleared = Number(t.scored_marks) >= Number(t.cutoff_marks);
+            cutoffHtml = cleared
+              ? `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">✓ Cutoff Cleared (${t.cutoff_marks})</span>`
+              : `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">✕ Cutoff Missed (${t.cutoff_marks})</span>`;
+          }
+
+          let compHtml = '';
+          if (t.computer_qualified === true) {
+            compHtml = `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">💻 Computer: Qualified</span>`;
+          } else if (t.computer_qualified === false) {
+            compHtml = `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">💻 Computer: Not Qualified</span>`;
+          }
+
+          topRow.innerHTML = `
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span class="px-2 py-0.5 rounded-md bg-slate-900 text-white text-xs font-bold">#${t.testNumber}</span>
+              <span class="px-2 py-0.5 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">${examLabel}</span>
+              <span class="px-2 py-0.5 rounded-full text-xs font-semibold border ${stageBadge}">${t.stage}</span>
+              <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">${typeLabel}</span>
+              ${cutoffHtml}
+              ${compHtml}
+              <span class="text-xs text-slate-500 font-medium">${t.test_date}</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-bold text-indigo-700">${t.scored_marks} / ${t.total_marks} (${pct}%)</span>
+            </div>
+          `;
+
+          const editBtn = document.createElement('button');
+          editBtn.type = 'button';
+          editBtn.textContent = 'Edit';
+          editBtn.className = 'text-xs font-medium text-slate-500 hover:text-indigo-600 px-2 py-1 rounded-lg hover:bg-indigo-50 transition';
+          editBtn.addEventListener('click', () => {
+            editingItem = { type: 'mock', id: t.id };
+            renderMockTests();
+          });
+
+          const delBtn = document.createElement('button');
+          delBtn.type = 'button';
+          delBtn.textContent = 'Delete';
+          delBtn.className = 'text-xs font-medium text-slate-400 hover:text-rose-600 px-2 py-1 rounded-lg hover:bg-rose-50 transition';
+          delBtn.addEventListener('click', () => deleteMockTest(t.id));
+
+          topRow.lastElementChild.append(editBtn, delBtn);
+
+          li.appendChild(topRow);
+
+          if (t.test_type === 'Full') {
+            const subRow = document.createElement('div');
+            subRow.className = 'grid grid-cols-4 gap-1.5 text-center text-[11px] text-slate-600 bg-slate-50 rounded-lg p-2';
+            subRow.innerHTML = `
+              <div><span class="font-semibold">Math:</span> ${t.math_marks ?? 0}</div>
+              <div><span class="font-semibold">Reas:</span> ${t.reasoning_marks ?? 0}</div>
+              <div><span class="font-semibold">Eng:</span> ${t.english_marks ?? 0}</div>
+              <div><span class="font-semibold">GK/GS:</span> ${t.gkgs_marks ?? 0}</div>
+            `;
+            li.appendChild(subRow);
+          }
+
+          list.appendChild(li);
+        });
+      }
+
+      section.appendChild(list);
+      return section;
+    }
+
+    // --- RENDERING: EXAM DATES ---
+    function renderExamDates() {
+      const list = document.getElementById('examDatesList');
+      list.innerHTML = '';
+      const sorted = (appData.examDates || []).slice().sort((a, b) => a.exam_date.localeCompare(b.exam_date));
+      if (sorted.length === 0) {
+        const empty = document.createElement('li');
+        empty.className = 'text-xs text-slate-400 text-center py-6';
+        empty.textContent = 'No exam dates added yet. Add your first target exam above!';
+        list.appendChild(empty);
+        return;
+      }
+      sorted.forEach(ex => {
+        const c = getCountdownParts(ex.exam_date);
+        const whoLabel = ex.officer === 'both' ? 'Both Officers' : (ex.officer === 'ekta' ? 'Officer Ekta' : 'Officer Rohit');
+        const whoCls = ex.officer === 'ekta'
+          ? 'bg-rose-50 text-rose-700 border-rose-200'
+          : ex.officer === 'rohit'
+            ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+            : 'bg-purple-50 text-purple-700 border-purple-200';
+        const daysBadge = c.isPast
+          ? 'Passed'
+          : (c.isToday ? 'Today!' : `${c.dayDiff} Days Left`);
+
+        const li = document.createElement('li');
+        li.className = 'p-3.5 rounded-xl border border-slate-200 bg-white flex flex-wrap items-center justify-between gap-3';
+        li.innerHTML = `
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-sm font-bold text-slate-900">${ex.exam_name}</span>
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold border ${whoCls}">${whoLabel}</span>
+            <span class="text-xs font-medium text-slate-500">${ex.exam_date}</span>
+          </div>
+          <div class="flex items-center gap-2.5">
+            <span class="px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">${daysBadge}</span>
+          </div>
+        `;
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.textContent = 'Delete';
+        delBtn.className = 'text-xs font-medium text-slate-400 hover:text-rose-600 px-2 py-1 rounded-lg hover:bg-rose-50 transition';
+        delBtn.addEventListener('click', () => deleteExamDate(ex.id));
+        li.lastElementChild.appendChild(delBtn);
+        list.appendChild(li);
+      });
+    }
+
+    let countdownTimerId = null;
+    function startCountdownTicker() {
+      if (countdownTimerId) clearInterval(countdownTimerId);
+      countdownTimerId = setInterval(() => {
+        document.querySelectorAll('[data-countdown-date]').forEach(el => {
+          const d = el.getAttribute('data-countdown-date');
+          if (!d) return;
+          const c = getCountdownParts(d);
+          el.textContent = `${c.hrs}:${c.mins}:${c.secs}`;
+        });
+      }, 1000);
+    }
+    startCountdownTicker();
+
+    // --- THEME (PHANTOM NIGHT / DAY MODE) ---
+    const THEME_KEY = 'command_tracker_theme_v1';
+    function getSavedTheme() {
+      try {
+        return localStorage.getItem(THEME_KEY) || 'dark';
+      } catch (e) {
+        return 'dark';
+      }
+    }
+    function applyTheme(mode) {
+      const isDark = mode === 'dark';
+      document.documentElement.classList.toggle('dark', isDark);
+      const label = isDark ? '☀️ Day Mode' : '🌙 Phantom Night';
+      const shortLabel = isDark ? '☀️ Day' : '🌙 Night';
+      const btn1 = document.getElementById('themeToggleBtn');
+      const btn2 = document.getElementById('loginThemeBtn');
+      if (btn1) btn1.textContent = label;
+      if (btn2) btn2.textContent = shortLabel;
+      try {
+        localStorage.setItem(THEME_KEY, mode);
+      } catch (e) {}
+    }
+    function toggleTheme() {
+      const next = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
+      applyTheme(next);
+    }
+    applyTheme(getSavedTheme());
+    document.getElementById('themeToggleBtn').addEventListener('click', toggleTheme);
+    document.getElementById('loginThemeBtn').addEventListener('click', toggleTheme);
+
+    // --- EVENT LISTENERS ---
+    const loginScreen = document.getElementById('loginScreen');
+    const appScreen = document.getElementById('appScreen');
+    const loginForm = document.getElementById('loginForm');
+    const passwordInput = document.getElementById('passwordInput');
+    const loginError = document.getElementById('loginError');
+
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (passwordInput.value === appConfig.password) {
+        loginError.classList.add('hidden');
+        passwordInput.value = '';
+        loginScreen.classList.add('hidden');
+        appScreen.classList.remove('hidden');
+        appScreen.classList.add('flex');
+        if (initSupabase()) {
+          await syncFromSupabase();
+        } else {
+          updateDbBadge(false);
+        }
+        switchView('dashboard');
+      } else {
+        loginError.classList.remove('hidden');
+        passwordInput.select();
+      }
+    });
+
+    document.getElementById('lockBtn').addEventListener('click', () => {
+      appScreen.classList.add('hidden');
+      appScreen.classList.remove('flex');
+      loginScreen.classList.remove('hidden');
+      loginError.classList.add('hidden');
+      passwordInput.value = '';
+      passwordInput.focus();
+    });
+
+    document.getElementById('syncNowBtn').addEventListener('click', async () => {
+      if (supabaseClient) {
+        await syncFromSupabase();
+        renderCurrentView();
+      }
+    });
+
+    window.addEventListener('focus', async () => {
+      if (supabaseClient && !appScreen.classList.contains('hidden')) {
+        await syncFromSupabase();
+        renderCurrentView();
+      }
+    });
+
+    document.getElementById('navDashboardBtn').addEventListener('click', () => switchView('dashboard'));
+    document.getElementById('navAnalyticsBtn').addEventListener('click', () => switchView('analytics'));
+    document.getElementById('navMocksBtn').addEventListener('click', () => switchView('mocks'));
+    document.getElementById('navExamsBtn').addEventListener('click', () => switchView('exams'));
+
+    document.getElementById('addExamDateForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = document.getElementById('examNameInput').value.trim();
+      const dateVal = document.getElementById('examDateInput').value;
+      const officerVal = document.getElementById('examOfficerSelect').value;
+      if (!name || !dateVal) return;
+      addExamDate({
+        id: `exam_${Date.now()}`,
+        exam_name: name,
+        exam_date: dateVal,
+        officer: officerVal
+      });
+      document.getElementById('examNameInput').value = '';
+    });
+
+    document.getElementById('datePicker').addEventListener('change', (e) => {
+      if (e.target.value) {
+        selectedDate = e.target.value;
+        editingItem = null;
+        renderDashboard();
+      }
+    });
+
+    document.getElementById('prevDayBtn').addEventListener('click', () => {
+      selectedDate = shiftDateKey(selectedDate, -1);
+      editingItem = null;
+      renderDashboard();
+    });
+
+    document.getElementById('nextDayBtn').addEventListener('click', () => {
+      selectedDate = shiftDateKey(selectedDate, 1);
+      editingItem = null;
+      renderDashboard();
+    });
+
+    document.getElementById('todayBtn').addEventListener('click', () => {
+      selectedDate = getTodayKey();
+      editingItem = null;
+      renderDashboard();
+    });
+
+    document.getElementById('prevMonthBtn').addEventListener('click', () => {
+      calendarMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1);
+      renderMonthlyCalendar();
+    });
+
+    document.getElementById('nextMonthBtn').addEventListener('click', () => {
+      calendarMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1);
+      renderMonthlyCalendar();
+    });
+
+    document.getElementById('thisMonthBtn').addEventListener('click', () => {
+      const now = new Date();
+      calendarMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      renderMonthlyCalendar();
+    });
+
+    // --- STREAK-BREAK REASON MODAL ---
+    let activeReasonDate = null;
+    const reasonModal = document.getElementById('reasonModal');
+    const reasonModalSubtitle = document.getElementById('reasonModalSubtitle');
+    const reasonWhoSelect = document.getElementById('reasonWhoSelect');
+    const reasonTextInput = document.getElementById('reasonTextInput');
+
+    function openReasonModal(dateKey, dayKind, eDone, rDone) {
+      activeReasonDate = dateKey;
+      const existing = (appData.streakReasons || []).find(r => r.reason_date === dateKey);
+
+      if (dayKind === 'purple') {
+        reasonModalSubtitle.textContent = `${dateKey} • Purple Day (One officer missed 100%)`;
+        reasonWhoSelect.innerHTML = `
+          <option value="ekta">Officer Ekta</option>
+          <option value="rohit">Officer Rohit</option>
+        `;
+        reasonWhoSelect.value = existing ? existing.who_missed : (eDone ? 'rohit' : 'ekta');
+      } else {
+        reasonModalSubtitle.textContent = `${dateKey} • Red Day (Neither officer completed 100%)`;
+        reasonWhoSelect.innerHTML = `
+          <option value="both">Both (Officer Ekta &amp; Officer Rohit)</option>
+          <option value="ekta">Officer Ekta</option>
+          <option value="rohit">Officer Rohit</option>
+        `;
+        reasonWhoSelect.value = existing ? existing.who_missed : 'both';
+      }
+
+      reasonTextInput.value = existing ? existing.reason : '';
+      reasonModal.classList.remove('hidden');
+      reasonTextInput.focus();
+    }
+
+    document.getElementById('closeReasonModalBtn').addEventListener('click', () => {
+      reasonModal.classList.add('hidden');
+    });
+
+    document.getElementById('openReasonDateDashBtn').addEventListener('click', () => {
+      if (activeReasonDate) {
+        selectedDate = activeReasonDate;
+        reasonModal.classList.add('hidden');
+        switchView('dashboard');
+      }
+    });
+
+    document.getElementById('reasonForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const text = reasonTextInput.value.trim();
+      if (!activeReasonDate || !text) return;
+      saveStreakReason(activeReasonDate, reasonWhoSelect.value, text);
+      reasonModal.classList.add('hidden');
+    });
+
+    // --- SETTINGS MODAL ---
+    const settingsModal = document.getElementById('settingsModal');
+    const settingsStatus = document.getElementById('settingsStatus');
+
+    function openSettingsModal() {
+      document.getElementById('supabaseUrlInput').value = appConfig.supabaseUrl || '';
+      document.getElementById('supabaseKeyInput').value = appConfig.supabaseKey || '';
+      document.getElementById('newPasswordInput').value = '';
+      settingsStatus.classList.add('hidden');
+      settingsModal.classList.remove('hidden');
+    }
+
+    document.getElementById('settingsBtn').addEventListener('click', openSettingsModal);
+    document.getElementById('dbBadgeBtn').addEventListener('click', openSettingsModal);
+    document.getElementById('closeSettingsBtn').addEventListener('click', () => {
+      settingsModal.classList.add('hidden');
+    });
+
+    document.getElementById('settingsForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const url = document.getElementById('supabaseUrlInput').value.trim();
+      const key = document.getElementById('supabaseKeyInput').value.trim();
+      const newPass = document.getElementById('newPasswordInput').value.trim();
+
+      if (newPass) appConfig.password = newPass;
+      appConfig.supabaseUrl = url;
+      appConfig.supabaseKey = key;
+      saveConfig();
+
+      if (url && key) {
+        initSupabase();
+        await syncFromSupabase(true);
+        settingsStatus.textContent = 'Saved! Live-synced with Supabase.';
+        settingsStatus.className = 'text-sm font-medium text-emerald-600';
+      } else {
+        supabaseClient = null;
+        updateDbBadge(false);
+        settingsStatus.textContent = 'Settings saved in Local Mode.';
+        settingsStatus.className = 'text-sm font-medium text-indigo-600';
+      }
+      settingsStatus.classList.remove('hidden');
+      renderCurrentView();
+    });
+
+    document.getElementById('disconnectSupabaseBtn').addEventListener('click', () => {
+      appConfig.supabaseUrl = '';
+      appConfig.supabaseKey = '';
+      saveConfig();
+      supabaseClient = null;
+      updateDbBadge(false);
+      document.getElementById('supabaseUrlInput').value = '';
+      document.getElementById('supabaseKeyInput').value = '';
+      settingsStatus.textContent = 'Switched to Local Mode.';
+      settingsStatus.className = 'text-sm font-medium text-slate-600';
+      settingsStatus.classList.remove('hidden');
+      renderCurrentView();
+    });
+
+    document.getElementById('copySqlBtn').addEventListener('click', async () => {
+      const sql = document.getElementById('sqlCodeBlock').textContent;
+      try {
+        await navigator.clipboard.writeText(sql);
+      } catch (e) {
+        const ta = document.createElement('textarea');
+        ta.value = sql;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      const btn = document.getElementById('copySqlBtn');
+      btn.textContent = 'Copied!';
+      setTimeout(() => { btn.textContent = 'Copy SQL'; }, 1500);
+    });
+  </script>
+</body>
+</html>
