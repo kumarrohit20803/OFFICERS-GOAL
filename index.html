@@ -1057,9 +1057,17 @@ alter publication supabase_realtime add table streak_reasons;</pre>
       }
     }
 
+    // A habit is visible only during the dates when it was active.
+    // Missing active_from keeps older habits compatible with existing saved data.
+    function isHabitActiveOnDate(habit, dateKey) {
+      const startsOn = habit.active_from || '0000-01-01';
+      const endsBefore = habit.archived_at || null;
+      return startsOn <= dateKey && (!endsBefore || dateKey < endsBefore);
+    }
+
     // --- DAILY STATS & STREAK CALCULATIONS ---
     function getOfficerDayStats(officerId, dateKey) {
-      const habits = appData.habits.filter(h => h.officer === officerId);
+      const habits = appData.habits.filter(h => h.officer === officerId && isHabitActiveOnDate(h, dateKey));
       const checkedSet = new Set(
         appData.habitLogs
           .filter(l => l.officer === officerId && l.log_date === dateKey)
@@ -1088,7 +1096,7 @@ alter publication supabase_realtime add table streak_reasons;</pre>
 
     function getOfficerLifetimeStats(officerId) {
       const today = getTodayKey();
-      const habits = appData.habits.filter(h => h.officer === officerId);
+      const habits = appData.habits.filter(h => h.officer === officerId && isHabitActiveOnDate(h, today));
       const todayChecked = new Set(
         appData.habitLogs
           .filter(l => l.officer === officerId && l.log_date === today)
@@ -1226,7 +1234,8 @@ alter publication supabase_realtime add table streak_reasons;</pre>
       const newHabit = {
         id: `${officerId}_h_${Date.now()}`,
         officer: officerId,
-        name
+        name,
+        active_from: getTodayKey()
       };
       appData.habits.push(newHabit);
       saveLocalData();
@@ -1240,26 +1249,45 @@ alter publication supabase_realtime add table streak_reasons;</pre>
     async function updateHabitName(habitId, newName) {
       const habit = appData.habits.find(h => h.id === habitId);
       if (!habit) return;
-      habit.name = newName;
+      const today = getTodayKey();
+      if (habit.name === newName) {
+        editingItem = null;
+        renderCurrentView();
+        return;
+      }
+
+      // Keep the old name and all its historical logs; create a renamed version from today.
+      habit.archived_at = today;
+      const renamedHabit = {
+        id: `${habit.officer}_h_${Date.now()}`,
+        officer: habit.officer,
+        name: newName,
+        active_from: today
+      };
+      appData.habits.push(renamedHabit);
+
+      // If the old habit was already checked today, carry today's completion to the new version.
+      const todayLog = appData.habitLogs.find(l =>
+        l.habit_id === habitId && l.log_date === today && l.officer === habit.officer
+      );
+      if (todayLog) {
+        todayLog.habit_id = renamedHabit.id;
+        todayLog.id = `${habit.officer}_${renamedHabit.id}_${today}`;
+      }
+
       editingItem = null;
       saveLocalData();
       renderCurrentView();
-
-      if (supabaseClient) {
-        await runDbWrite(supabaseClient.from('habits').update({ name: newName }).eq('id', habitId));
-      }
     }
 
     async function deleteHabit(habitId) {
-      appData.habits = appData.habits.filter(h => h.id !== habitId);
-      appData.habitLogs = appData.habitLogs.filter(l => l.habit_id !== habitId);
+      const habit = appData.habits.find(h => h.id === habitId);
+      if (!habit) return;
+
+      // Archive from today onward; never erase the habit or its past completion logs.
+      habit.archived_at = getTodayKey();
       saveLocalData();
       renderCurrentView();
-
-      if (supabaseClient) {
-        await runDbWrite(supabaseClient.from('habits').delete().eq('id', habitId));
-        await runDbWrite(supabaseClient.from('habit_logs').delete().eq('habit_id', habitId));
-      }
     }
 
     async function toggleHabitLog(officerId, habitId) {
@@ -1538,7 +1566,7 @@ alter publication supabase_realtime add table streak_reasons;</pre>
     }
 
     function buildOfficerCard(officer) {
-      const habits = appData.habits.filter(h => h.officer === officer.id);
+      const habits = appData.habits.filter(h => h.officer === officer.id && isHabitActiveOnDate(h, selectedDate));
       const checkedHabitIds = new Set(
         appData.habitLogs
           .filter(l => l.officer === officer.id && l.log_date === selectedDate)
