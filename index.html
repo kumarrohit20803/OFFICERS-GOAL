@@ -1482,20 +1482,41 @@ alter publication supabase_realtime add table streak_reasons;</pre>
     }
 
     async function addGoal(officerId, title, priority) {
-      const newGoal = {
-        id: `${officerId}_g_${Date.now()}`,
-        officer: officerId,
-        goal_date: selectedDate,
-        title,
-        priority,
-        completed: false
-      };
-      appData.dailyGoals.push(newGoal);
-      saveLocalData();
-      renderCurrentView();
+      const goalDate = selectedDate;
+      const draftKey = `${officerId}:${goalDate}`;
+      if (goalSubmitLocks.has(draftKey)) return;
+      goalSubmitLocks.add(draftKey);
 
-      if (supabaseClient) {
-        await runDbWrite(supabaseClient.from('daily_goals').insert(newGoal));
+      try {
+        const uniquePart = window.crypto?.randomUUID?.() ||
+          `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+        const newGoal = {
+          id: `${officerId}_g_${uniquePart}`,
+          officer: officerId,
+          goal_date: goalDate,
+          title,
+          priority,
+          completed: false
+        };
+
+        appData.dailyGoals.push(newGoal);
+        goalDrafts.delete(draftKey);
+
+        // Rebuild the list after the new goal is safely in local state, but do
+        // not recapture the just-submitted text as an unfinished draft.
+        suppressGoalDraftCapture = true;
+        try {
+          saveLocalData();
+          renderCurrentView();
+        } finally {
+          suppressGoalDraftCapture = false;
+        }
+
+        if (supabaseClient) {
+          await runDbWrite(supabaseClient.from('daily_goals').insert(newGoal));
+        }
+      } finally {
+        goalSubmitLocks.delete(draftKey);
       }
     }
 
