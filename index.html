@@ -985,15 +985,18 @@ alter publication supabase_realtime add table streak_reasons;</pre>
         if (result.updated_at && result.updated_at !== lastSharedUpdatedAt) {
           const remotePayload = normalizeSharedPayload(result.payload || {});
           const localChangedDuringRequest = revisionAtRequest !== localDataRevision;
-          const nextData = localChangedDuringRequest
+          const hasUnacknowledgedLocalChanges = !!lastSyncedAppData &&
+            !valuesEqual(appData, lastSyncedAppData);
+          const shouldMergeLocalChanges = localChangedDuringRequest || hasUnacknowledgedLocalChanges;
+          const nextData = shouldMergeLocalChanges
             ? mergeSharedAppData(baseSnapshot, appData, remotePayload)
             : remotePayload;
 
           lastSyncedAppData = cloneAppData(remotePayload);
           appData = nextData;
 
-          if (localChangedDuringRequest) {
-            saveLocalData(); // Persist the merge and queue it for cloud acknowledgement.
+          if (shouldMergeLocalChanges) {
+            saveLocalData(); // Persist unsynced local work and queue it for cloud acknowledgement.
           } else {
             suppressSharedSave = true;
             try {
