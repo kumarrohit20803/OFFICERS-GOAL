@@ -925,10 +925,13 @@ alter publication supabase_realtime add table streak_reasons;</pre>
         const payloadSnapshot = cloneAppData(appData);
         try {
           const acknowledgedAt = await saveSharedSnapshot(payloadSnapshot);
-          if (saveRevision === localDataRevision) {
+          if (acknowledgedAt) {
+            // The server has acknowledged this exact snapshot, even if newer
+            // local edits were made while the request was in flight.
             lastSyncedAppData = cloneAppData(payloadSnapshot);
-            if (acknowledgedAt) lastSharedUpdatedAt = acknowledgedAt;
-            else sharedRefreshRequested = true;
+            lastSharedUpdatedAt = acknowledgedAt;
+          } else {
+            sharedRefreshRequested = true;
           }
           setSharedSyncStatus(true);
         } catch (error) {
