@@ -790,6 +790,86 @@ alter publication supabase_realtime add table streak_reasons;</pre>
     let sharedSaveInFlight = false;
     let suppressSharedSave = false;
     let lastSharedUpdatedAt = null;
+    let localDataRevision = 0;
+    let lastSyncedAppData = null;
+    let sharedRefreshInFlight = false;
+    let sharedRefreshRequested = false;
+    const goalDrafts = new Map();
+    const goalSubmitLocks = new Set();
+    let suppressGoalDraftCapture = false;
+
+    function cloneAppData(data) {
+      return structuredClone(data);
+    }
+
+    function normalizeSharedPayload(payload = {}) {
+      return {
+        habits: Array.isArray(payload.habits) ? payload.habits : [],
+        habitLogs: Array.isArray(payload.habitLogs) ? payload.habitLogs : [],
+        dailyGoals: Array.isArray(payload.dailyGoals) ? payload.dailyGoals : [],
+        mockTests: Array.isArray(payload.mockTests) ? payload.mockTests : [],
+        examDates: Array.isArray(payload.examDates) ? payload.examDates : [],
+        streakReasons: Array.isArray(payload.streakReasons) ? payload.streakReasons : []
+      };
+    }
+
+    function valuesEqual(a, b) {
+      if (a === b) return true;
+      if (a === null || b === null || typeof a !== 'object' || typeof b !== 'object') return false;
+      if (Array.isArray(a) !== Array.isArray(b)) return false;
+      const aKeys = Object.keys(a).sort();
+      const bKeys = Object.keys(b).sort();
+      if (aKeys.length !== bKeys.length || aKeys.some((key, index) => key !== bKeys[index])) return false;
+      return aKeys.every(key => valuesEqual(a[key], b[key]));
+    }
+
+    // Three-way merge by record ID. Independent changes from another device are
+    // retained; when the same field changed on both devices, the current device wins.
+    function mergeSharedCollection(baseItems = [], localItems = [], remoteItems = []) {
+      const baseMap = new Map(baseItems.map(item => [item.id, item]));
+      const localMap = new Map(localItems.map(item => [item.id, item]));
+      const remoteMap = new Map(remoteItems.map(item => [item.id, item]));
+      const ids = new Set([...remoteMap.keys(), ...localMap.keys(), ...baseMap.keys()]);
+      const merged = [];
+
+      for (const id of ids) {
+        const base = baseMap.get(id);
+        const local = localMap.get(id);
+        const remote = remoteMap.get(id);
+        const localChanged = !valuesEqual(local, base);
+        const remoteChanged = !valuesEqual(remote, base);
+        let chosen;
+
+        if (!localChanged) {
+          chosen = remote;
+        } else if (!remoteChanged || valuesEqual(local, remote)) {
+          chosen = local;
+        } else if (!local || !remote) {
+          // A concurrent delete/edit should not silently discard the surviving edit.
+          chosen = local || remote;
+        } else {
+          chosen = { ...base, ...remote, ...local };
+          const fields = new Set([...Object.keys(base || {}), ...Object.keys(local), ...Object.keys(remote)]);
+          for (const field of fields) {
+            const localFieldChanged = !valuesEqual(local[field], base?.[field]);
+            const remoteFieldChanged = !valuesEqual(remote[field], base?.[field]);
+            if (remoteFieldChanged && !localFieldChanged) chosen[field] = remote[field];
+            else if (localFieldChanged) chosen[field] = local[field];
+          }
+        }
+
+        if (chosen) merged.push(chosen);
+      }
+      return merged;
+    }
+
+    function mergeSharedAppData(base, local, remote) {
+      const result = {};
+      for (const key of ['habits', 'habitLogs', 'dailyGoals', 'mockTests', 'examDates', 'streakReasons']) {
+        result[key] = mergeSharedCollection(base?.[key] || [], local?.[key] || [], remote?.[key] || []);
+      }
+      return result;
+    }
 
     async function sharedApi(action, extra = {}) {
       const headers = { 'Content-Type': 'application/json', 'apikey': SHARED_API_KEY };
@@ -798,8 +878,25 @@ alter publication supabase_realtime add table streak_reasons;</pre>
         method: 'POST', headers, body: JSON.stringify({ action, ...extra })
       });
       const result = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(result.error || 'Cloud request failed (' + response.status + ')');
+      if (!response.ok) {
+        const error = new Error(result.error || 'Cloud request failed (' + response.status + ')');
+        error.status = response.status;
+        error.details = result;
+        throw error;
+      }
       return result;
+    }
+
+    async function saveSharedSnapshot(payload) {
+      const result = await sharedApi('save', { payload });
+      if (result.updated_at) return result.updated_at;
+
+      // Backward-compatible acknowledgement while an older Edge Function is deployed.
+      const verification = await sharedApi('get');
+      if (valuesEqual(normalizeSharedPayload(verification.payload), normalizeSharedPayload(payload))) {
+        return verification.updated_at || null;
+      }
+      return null;
     }
 
     function setSharedSyncStatus(ok, message = '') {
@@ -824,64 +921,100 @@ alter publication supabase_realtime add table streak_reasons;</pre>
         sharedSaveTimer = null;
         if (sharedSaveInFlight) { scheduleSharedSave(); return; }
         sharedSaveInFlight = true;
+        const saveRevision = localDataRevision;
+        const payloadSnapshot = cloneAppData(appData);
         try {
-          await sharedApi('save', { payload: appData });
+          const acknowledgedAt = await saveSharedSnapshot(payloadSnapshot);
+          if (saveRevision === localDataRevision) {
+            lastSyncedAppData = cloneAppData(payloadSnapshot);
+            if (acknowledgedAt) lastSharedUpdatedAt = acknowledgedAt;
+            else sharedRefreshRequested = true;
+          }
           setSharedSyncStatus(true);
         } catch (error) {
           setSharedSyncStatus(false, error.message);
         } finally {
           sharedSaveInFlight = false;
+          if (saveRevision !== localDataRevision && !sharedSaveTimer) scheduleSharedSave();
+          if (sharedRefreshRequested && !sharedSaveTimer) {
+            sharedRefreshRequested = false;
+            Promise.resolve().then(refreshSharedData);
+          }
         }
       }, 500);
     }
 
     async function loadSharedData(seedLocalIfEmpty = true) {
       const result = await sharedApi('get');
-      const payload = result.payload || {};
-      const hasRemoteData = !!result.updated_at || Object.values(payload).some(value => Array.isArray(value) && value.length > 0);
+      const payload = normalizeSharedPayload(result.payload || {});
+      const hasRemoteData = !!result.updated_at || Object.values(payload).some(value => value.length > 0);
+
       if (!hasRemoteData && seedLocalIfEmpty) {
-        await sharedApi('save', { payload: appData });
+        const acknowledgedAt = await saveSharedSnapshot(cloneAppData(appData));
+        lastSyncedAppData = cloneAppData(appData);
+        if (acknowledgedAt) lastSharedUpdatedAt = acknowledgedAt;
       } else {
         suppressSharedSave = true;
-        appData = {
-          habits: Array.isArray(payload.habits) ? payload.habits : [],
-          habitLogs: Array.isArray(payload.habitLogs) ? payload.habitLogs : [],
-          dailyGoals: Array.isArray(payload.dailyGoals) ? payload.dailyGoals : [],
-          mockTests: Array.isArray(payload.mockTests) ? payload.mockTests : [],
-          examDates: Array.isArray(payload.examDates) ? payload.examDates : [],
-          streakReasons: Array.isArray(payload.streakReasons) ? payload.streakReasons : []
-        };
-        saveLocalData();
-        suppressSharedSave = false;
+        try {
+          appData = payload;
+          saveLocalData();
+        } finally {
+          suppressSharedSave = false;
+        }
+        lastSyncedAppData = cloneAppData(appData);
       }
-      lastSharedUpdatedAt = result.updated_at || null;
+
+      lastSharedUpdatedAt = result.updated_at || lastSharedUpdatedAt || null;
       setSharedSyncStatus(true);
       renderCurrentView();
     }
 
     async function refreshSharedData() {
-      if (!sharedSessionToken || sharedSaveInFlight || sharedSaveTimer) return;
+      if (!sharedSessionToken) return;
+      if (sharedSaveInFlight || sharedSaveTimer || sharedRefreshInFlight) {
+        sharedRefreshRequested = true;
+        return;
+      }
+
+      sharedRefreshInFlight = true;
+      const revisionAtRequest = localDataRevision;
+      const baseSnapshot = cloneAppData(lastSyncedAppData || appData);
+
       try {
         const result = await sharedApi('get');
         if (result.updated_at && result.updated_at !== lastSharedUpdatedAt) {
-          const payload = result.payload || {};
-          suppressSharedSave = true;
-          appData = {
-            habits: Array.isArray(payload.habits) ? payload.habits : [],
-            habitLogs: Array.isArray(payload.habitLogs) ? payload.habitLogs : [],
-            dailyGoals: Array.isArray(payload.dailyGoals) ? payload.dailyGoals : [],
-            mockTests: Array.isArray(payload.mockTests) ? payload.mockTests : [],
-            examDates: Array.isArray(payload.examDates) ? payload.examDates : [],
-            streakReasons: Array.isArray(payload.streakReasons) ? payload.streakReasons : []
-          };
-          saveLocalData();
-          suppressSharedSave = false;
+          const remotePayload = normalizeSharedPayload(result.payload || {});
+          const localChangedDuringRequest = revisionAtRequest !== localDataRevision;
+          const nextData = localChangedDuringRequest
+            ? mergeSharedAppData(baseSnapshot, appData, remotePayload)
+            : remotePayload;
+
+          lastSyncedAppData = cloneAppData(remotePayload);
+          appData = nextData;
+
+          if (localChangedDuringRequest) {
+            saveLocalData(); // Persist the merge and queue it for cloud acknowledgement.
+          } else {
+            suppressSharedSave = true;
+            try {
+              saveLocalData();
+            } finally {
+              suppressSharedSave = false;
+            }
+          }
+
           lastSharedUpdatedAt = result.updated_at;
           renderCurrentView();
         }
         setSharedSyncStatus(true);
       } catch (error) {
         setSharedSyncStatus(false, error.message);
+      } finally {
+        sharedRefreshInFlight = false;
+        if (sharedRefreshRequested && !sharedSaveInFlight && !sharedSaveTimer) {
+          sharedRefreshRequested = false;
+          Promise.resolve().then(refreshSharedData);
+        }
       }
     }
 
@@ -891,7 +1024,10 @@ alter publication supabase_realtime add table streak_reasons;</pre>
       } catch (e) {
         // Ignore storage errors
       }
-      scheduleSharedSave();
+      if (!suppressSharedSave) {
+        localDataRevision += 1;
+        scheduleSharedSave();
+      }
     }
 
     let appConfig = loadConfig();
