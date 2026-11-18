@@ -1037,6 +1037,9 @@ alter publication supabase_realtime add table streak_reasons;</pre>
     let calendarMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
     let supabaseClient = null;
     let realtimeChannel = null;
+    let supabaseSyncInFlight = false;
+    let supabaseSyncRequested = false;
+    let supabaseRealtimeTimer = null;
     let editingItem = null;
     const mockFilters = {
       ekta: { open: false, exam: 'ALL', stage: 'ALL', type: 'ALL', subjects: [], cutoff: 'ALL' },
@@ -1053,30 +1056,27 @@ alter publication supabase_realtime add table streak_reasons;</pre>
       realtimeChannel = null;
     }
 
+    function queueSupabaseRealtimeSync() {
+      clearTimeout(supabaseRealtimeTimer);
+      supabaseRealtimeTimer = setTimeout(async () => {
+        supabaseRealtimeTimer = null;
+        const applied = await syncFromSupabase();
+        if (applied) renderCurrentView();
+      }, 180);
+    }
+
     function startRealtime() {
       if (!supabaseClient) return;
       stopRealtime();
       try {
         realtimeChannel = supabaseClient
           .channel('command_tracker_live_sync')
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'habits' }, () => {
-            syncFromSupabase().then(() => renderCurrentView());
-          })
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'habit_logs' }, () => {
-            syncFromSupabase().then(() => renderCurrentView());
-          })
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_goals' }, () => {
-            syncFromSupabase().then(() => renderCurrentView());
-          })
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'mock_tests' }, () => {
-            syncFromSupabase().then(() => renderCurrentView());
-          })
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'exam_dates' }, () => {
-            syncFromSupabase().then(() => renderCurrentView());
-          })
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'streak_reasons' }, () => {
-            syncFromSupabase().then(() => renderCurrentView());
-          })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'habits' }, queueSupabaseRealtimeSync)
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'habit_logs' }, queueSupabaseRealtimeSync)
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_goals' }, queueSupabaseRealtimeSync)
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'mock_tests' }, queueSupabaseRealtimeSync)
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'exam_dates' }, queueSupabaseRealtimeSync)
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'streak_reasons' }, queueSupabaseRealtimeSync)
           .subscribe();
       } catch (e) {}
     }
@@ -1120,7 +1120,14 @@ alter publication supabase_realtime add table streak_reasons;</pre>
     }
 
     async function syncFromSupabase(seedIfEmpty = false) {
-      if (!supabaseClient) return;
+      if (!supabaseClient) return false;
+      if (supabaseSyncInFlight) {
+        supabaseSyncRequested = true;
+        return false;
+      }
+
+      supabaseSyncInFlight = true;
+      const revisionAtRequest = localDataRevision;
       try {
         const [hRes, lRes, gRes, mRes, eRes, rRes] = await Promise.all([
           supabaseClient.from('habits').select('*'),
@@ -1133,11 +1140,18 @@ alter publication supabase_realtime add table streak_reasons;</pre>
         if (hRes.error || lRes.error || gRes.error || mRes.error || eRes.error || rRes.error) {
           throw new Error((hRes.error || lRes.error || gRes.error || mRes.error || eRes.error || rRes.error).message);
         }
+
+        // Do not apply a snapshot fetched before a newer local mutation.
+        if (revisionAtRequest !== localDataRevision) {
+          supabaseSyncRequested = true;
+          return false;
+        }
+
         const remoteEmpty = (hRes.data || []).length === 0 && (lRes.data || []).length === 0 && (gRes.data || []).length === 0 && (mRes.data || []).length === 0 && (eRes.data || []).length === 0 && (rRes.data || []).length === 0;
         if (seedIfEmpty && remoteEmpty && (appData.habits.length > 0 || appData.dailyGoals.length > 0 || appData.mockTests.length > 0 || appData.examDates.length > 0 || appData.streakReasons.length > 0)) {
           await pushLocalToSupabaseIfEmpty();
         } else {
-          appData = {
+          const remoteData = {
             habits: hRes.data || [],
             habitLogs: lRes.data || [],
             dailyGoals: gRes.data || [],
@@ -1145,11 +1159,25 @@ alter publication supabase_realtime add table streak_reasons;</pre>
             examDates: eRes.data || [],
             streakReasons: rRes.data || []
           };
-          saveLocalData();
+          suppressSharedSave = true;
+          try {
+            appData = remoteData;
+            saveLocalData();
+          } finally {
+            suppressSharedSave = false;
+          }
         }
         updateDbBadge(true);
+        return true;
       } catch (err) {
         updateDbBadge(false, err.message);
+        return false;
+      } finally {
+        supabaseSyncInFlight = false;
+        if (supabaseSyncRequested) {
+          supabaseSyncRequested = false;
+          queueSupabaseRealtimeSync();
+        }
       }
     }
 
@@ -1667,6 +1695,26 @@ alter publication supabase_realtime add table streak_reasons;</pre>
 
     // --- RENDERING: DASHBOARD ---
     function renderDashboard() {
+      const previouslyFocused = document.activeElement;
+      const focusedGoalDraftKey = previouslyFocused?.dataset?.goalDraftKey || null;
+      const focusedGoalDraftControl = previouslyFocused?.dataset?.goalDraftControl || null;
+      const focusedSelectionStart = typeof previouslyFocused?.selectionStart === 'number'
+        ? previouslyFocused.selectionStart
+        : null;
+      const focusedSelectionEnd = typeof previouslyFocused?.selectionEnd === 'number'
+        ? previouslyFocused.selectionEnd
+        : null;
+
+      if (focusedGoalDraftKey && !suppressGoalDraftCapture) {
+        const focusedForm = previouslyFocused.closest('form');
+        const titleInput = focusedForm?.querySelector('[data-goal-draft-control="title"]');
+        const priorityInput = focusedForm?.querySelector('[data-goal-draft-control="priority"]');
+        goalDrafts.set(focusedGoalDraftKey, {
+          title: titleInput?.value ?? '',
+          priority: priorityInput?.value ?? 'important'
+        });
+      }
+
       document.getElementById('datePicker').value = selectedDate;
       document.getElementById('dateContextLabel').textContent = describeDate(selectedDate);
       document.getElementById('combinedDateShort').textContent = selectedDate;
@@ -1699,6 +1747,19 @@ alter publication supabase_realtime add table streak_reasons;</pre>
       OFFICERS.forEach(officer => {
         grid.appendChild(buildOfficerCard(officer));
       });
+
+      if (focusedGoalDraftKey && focusedGoalDraftControl) {
+        const restoredControl = Array.from(grid.querySelectorAll('[data-goal-draft-key]')).find(el =>
+          el.dataset.goalDraftKey === focusedGoalDraftKey &&
+          el.dataset.goalDraftControl === focusedGoalDraftControl
+        );
+        if (restoredControl) {
+          restoredControl.focus({ preventScroll: true });
+          if (focusedGoalDraftControl === 'title' && focusedSelectionStart !== null) {
+            restoredControl.setSelectionRange(focusedSelectionStart, focusedSelectionEnd);
+          }
+        }
+      }
     }
 
     function buildOfficerCard(officer) {
@@ -1896,10 +1957,17 @@ alter publication supabase_realtime add table streak_reasons;</pre>
       const addGoalForm = document.createElement('form');
       addGoalForm.className = 'flex flex-col sm:flex-row gap-2';
       const goalInput = document.createElement('input');
+      const goalDraftKey = `${officer.id}:${selectedDate}`;
+      const savedGoalDraft = goalDrafts.get(goalDraftKey) || {};
       goalInput.type = 'text';
       goalInput.placeholder = `Add goal for ${selectedDate}...`;
+      goalInput.value = savedGoalDraft.title || '';
+      goalInput.dataset.goalDraftKey = goalDraftKey;
+      goalInput.dataset.goalDraftControl = 'title';
       goalInput.className = 'flex-1 px-3 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500';
       const prioritySelect = document.createElement('select');
+      prioritySelect.dataset.goalDraftKey = goalDraftKey;
+      prioritySelect.dataset.goalDraftControl = 'priority';
       prioritySelect.className = 'px-2.5 py-2 rounded-xl border border-slate-300 text-xs font-medium text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500';
       Object.entries(PRIORITIES).forEach(([key, meta]) => {
         const opt = document.createElement('option');
@@ -1907,7 +1975,16 @@ alter publication supabase_realtime add table streak_reasons;</pre>
         opt.textContent = meta.label;
         prioritySelect.appendChild(opt);
       });
-      prioritySelect.value = 'important';
+      prioritySelect.value = savedGoalDraft.priority || 'important';
+
+      const updateGoalDraft = () => {
+        goalDrafts.set(goalDraftKey, {
+          title: goalInput.value,
+          priority: prioritySelect.value
+        });
+      };
+      goalInput.addEventListener('input', updateGoalDraft);
+      prioritySelect.addEventListener('change', updateGoalDraft);
 
       const goalAddBtn = document.createElement('button');
       goalAddBtn.type = 'submit';
@@ -1918,7 +1995,8 @@ alter publication supabase_realtime add table streak_reasons;</pre>
       addGoalForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const title = goalInput.value.trim();
-        if (!title) return;
+        if (!title || goalSubmitLocks.has(goalDraftKey)) return;
+        goalDrafts.delete(goalDraftKey);
         addGoal(officer.id, title, prioritySelect.value);
       });
       goalsBlock.appendChild(addGoalForm);
