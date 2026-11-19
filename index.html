@@ -887,14 +887,26 @@ alter publication supabase_realtime add table streak_reasons;</pre>
       return result;
     }
 
-    async function saveSharedSnapshot(payload) {
-      const result = await sharedApi('save', { payload });
-      if (result.updated_at) return result.updated_at;
+    async function saveSharedSnapshot(payload, basePayload = null, baseUpdatedAt = null) {
+      const saveRequest = { payload };
+      if (basePayload && baseUpdatedAt) {
+        saveRequest.base_payload = basePayload;
+        saveRequest.base_updated_at = baseUpdatedAt;
+      }
+
+      const result = await sharedApi('save', saveRequest);
+      if (result.updated_at) {
+        return {
+          updated_at: result.updated_at,
+          payload: normalizeSharedPayload(result.payload || payload)
+        };
+      }
 
       // Backward-compatible acknowledgement while an older Edge Function is deployed.
       const verification = await sharedApi('get');
-      if (valuesEqual(normalizeSharedPayload(verification.payload), normalizeSharedPayload(payload))) {
-        return verification.updated_at || null;
+      const verifiedPayload = normalizeSharedPayload(verification.payload);
+      if (valuesEqual(verifiedPayload, normalizeSharedPayload(payload))) {
+        return { updated_at: verification.updated_at || null, payload: verifiedPayload };
       }
       return null;
     }
@@ -923,13 +935,25 @@ alter publication supabase_realtime add table streak_reasons;</pre>
         sharedSaveInFlight = true;
         const saveRevision = localDataRevision;
         const payloadSnapshot = cloneAppData(appData);
+        const baseSnapshot = lastSyncedAppData ? cloneAppData(lastSyncedAppData) : null;
+        const baseUpdatedAt = lastSharedUpdatedAt;
         try {
-          const acknowledgedAt = await saveSharedSnapshot(payloadSnapshot);
-          if (acknowledgedAt) {
-            // The server has acknowledged this exact snapshot, even if newer
-            // local edits were made while the request was in flight.
-            lastSyncedAppData = cloneAppData(payloadSnapshot);
-            lastSharedUpdatedAt = acknowledgedAt;
+          const acknowledgement = await saveSharedSnapshot(payloadSnapshot, baseSnapshot, baseUpdatedAt);
+          if (acknowledgement?.updated_at) {
+            const acknowledgedPayload = normalizeSharedPayload(acknowledgement.payload || payloadSnapshot);
+            // The server may have merged changes from another device. Apply that
+            // acknowledged state without dropping edits made while this save was in flight.
+            const nextLocalData = mergeSharedAppData(payloadSnapshot, appData, acknowledgedPayload);
+            lastSyncedAppData = cloneAppData(acknowledgedPayload);
+            lastSharedUpdatedAt = acknowledgement.updated_at;
+            if (!valuesEqual(appData, nextLocalData)) {
+              appData = nextLocalData;
+              try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+              } catch (e) {
+                // Ignore storage errors; the cloud acknowledgement is still valid.
+              }
+            }
           } else {
             sharedRefreshRequested = true;
           }
@@ -953,9 +977,9 @@ alter publication supabase_realtime add table streak_reasons;</pre>
       const hasRemoteData = !!result.updated_at || Object.values(payload).some(value => value.length > 0);
 
       if (!hasRemoteData && seedLocalIfEmpty) {
-        const acknowledgedAt = await saveSharedSnapshot(cloneAppData(appData));
-        lastSyncedAppData = cloneAppData(appData);
-        if (acknowledgedAt) lastSharedUpdatedAt = acknowledgedAt;
+        const acknowledgement = await saveSharedSnapshot(cloneAppData(appData));
+        lastSyncedAppData = cloneAppData(acknowledgement?.payload || appData);
+        if (acknowledgement?.updated_at) lastSharedUpdatedAt = acknowledgement.updated_at;
       } else {
         suppressSharedSave = true;
         try {
