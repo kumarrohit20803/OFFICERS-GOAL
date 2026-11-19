@@ -960,6 +960,9 @@ alter publication supabase_realtime add table streak_reasons;</pre>
           setSharedSyncStatus(true);
         } catch (error) {
           setSharedSyncStatus(false, error.message);
+          // A compare-and-swap conflict means another device saved first.
+          // Refresh and merge that state before retrying this device's changes.
+          if (error.status === 409) sharedRefreshRequested = true;
         } finally {
           sharedSaveInFlight = false;
           if (saveRevision !== localDataRevision && !sharedSaveTimer) scheduleSharedSave();
