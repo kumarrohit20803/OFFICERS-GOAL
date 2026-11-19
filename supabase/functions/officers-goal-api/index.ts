@@ -122,6 +122,28 @@ function mergeSharedPayload(base: SharedRecord, local: SharedRecord, remote: Sha
   return result;
 }
 
+function mergeLegacySharedPayload(local: SharedRecord, remote: SharedRecord): SharedRecord {
+  // Old website versions send full snapshots without a base version. Keep their
+  // established replace semantics for ordinary collections, but make habit
+  // archives sticky so an already-open old tab cannot reactivate a habit.
+  const result: SharedRecord = { ...local };
+  result.habits = mergeSharedCollection([], local.habits, remote.habits);
+
+  const archivedHabitIds = new Set(
+    (Array.isArray(remote.habits) ? remote.habits : [])
+      .filter(isRecord)
+      .filter((habit) => typeof habit.archived_at === "string" && typeof habit.id === "string")
+      .map((habit) => habit.id),
+  );
+  const localLogs = Array.isArray(local.habitLogs) ? local.habitLogs.filter(isRecord) : [];
+  const localLogIds = new Set(localLogs.map((log) => log.id));
+  const historicalArchivedLogs = (
+    Array.isArray(remote.habitLogs) ? remote.habitLogs : []
+  ).filter((log) => isRecord(log) && archivedHabitIds.has(log.habit_id) && !localLogIds.has(log.id));
+  result.habitLogs = [...localLogs, ...historicalArchivedLogs];
+  return result;
+}
+
 Deno.serve(async (req: Request) => {
   const origin = req.headers.get("origin");
   if (origin && origin !== allowedOrigin) return json({ error: "Origin not allowed" }, 403);
@@ -216,7 +238,9 @@ Deno.serve(async (req: Request) => {
 
       const currentPayload = isRecord(current?.payload) ? current.payload : {};
       const mergedPayload = current
-        ? mergeSharedPayload(hasVersionedBase ? basePayload : {}, submittedPayload, currentPayload)
+        ? (hasVersionedBase
+          ? mergeSharedPayload(basePayload, submittedPayload, currentPayload)
+          : mergeLegacySharedPayload(submittedPayload, currentPayload))
         : submittedPayload;
 
       const mergedSerialized = JSON.stringify(mergedPayload);
