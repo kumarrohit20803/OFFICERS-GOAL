@@ -36,6 +36,114 @@ function randomToken() {
   return toHex(bytes);
 }
 
+type SharedRecord = Record<string, unknown>;
+
+function isRecord(value: unknown): value is SharedRecord {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+function sameValue(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (a === null || b === null || typeof a !== "object" || typeof b !== "object") return false;
+  if (Array.isArray(a) !== Array.isArray(b)) return false;
+  const aKeys = Object.keys(a as Record<string, unknown>).sort();
+  const bKeys = Object.keys(b as Record<string, unknown>).sort();
+  if (aKeys.length !== bKeys.length || aKeys.some((key, index) => key !== bKeys[index])) return false;
+  return aKeys.every((key) => sameValue(
+    (a as Record<string, unknown>)[key],
+    (b as Record<string, unknown>)[key],
+  ));
+}
+
+function mergeSharedCollection(baseValue: unknown, localValue: unknown, remoteValue: unknown): SharedRecord[] {
+  const toRecords = (value: unknown) => Array.isArray(value)
+    ? value.filter(isRecord)
+    : [];
+  const baseItems = toRecords(baseValue);
+  const localItems = toRecords(localValue);
+  const remoteItems = toRecords(remoteValue);
+  const baseMap = new Map(baseItems.map((item) => [item.id, item]));
+  const localMap = new Map(localItems.map((item) => [item.id, item]));
+  const remoteMap = new Map(remoteItems.map((item) => [item.id, item]));
+  const ids = new Set([...baseMap.keys(), ...localMap.keys(), ...remoteMap.keys()]);
+  const merged: SharedRecord[] = [];
+
+  for (const id of ids) {
+    const base = baseMap.get(id);
+    const local = localMap.get(id);
+    const remote = remoteMap.get(id);
+    const localChanged = !sameValue(local, base);
+    const remoteChanged = !sameValue(remote, base);
+    let chosen: SharedRecord | undefined;
+
+    if (!localChanged) {
+      chosen = remote;
+    } else if (!remoteChanged || sameValue(local, remote)) {
+      chosen = local;
+    } else if (!local || !remote) {
+      // A concurrent delete/edit keeps the surviving edit instead of losing it.
+      chosen = local || remote;
+    } else {
+      chosen = { ...base, ...remote, ...local };
+      const fields = new Set([
+        ...Object.keys(base || {}),
+        ...Object.keys(local),
+        ...Object.keys(remote),
+      ]);
+      for (const field of fields) {
+        const localFieldChanged = !sameValue(local[field], base?.[field]);
+        const remoteFieldChanged = !sameValue(remote[field], base?.[field]);
+        if (remoteFieldChanged && !localFieldChanged) chosen[field] = remote[field];
+        else if (localFieldChanged) chosen[field] = local[field];
+      }
+    }
+
+    if (chosen) {
+      // Archiving is a one-way lifecycle transition. A stale device must never
+      // clear or move an archive date forward and make the old habit active again.
+      const localArchive = typeof local?.archived_at === "string" ? local.archived_at : null;
+      const remoteArchive = typeof remote?.archived_at === "string" ? remote.archived_at : null;
+      const archiveDates = [localArchive, remoteArchive].filter((value): value is string => !!value);
+      if (archiveDates.length > 0) {
+        chosen = { ...chosen, archived_at: archiveDates.sort()[0] };
+      }
+      merged.push(chosen);
+    }
+  }
+
+  return merged;
+}
+
+function mergeSharedPayload(base: SharedRecord, local: SharedRecord, remote: SharedRecord): SharedRecord {
+  const result: SharedRecord = {};
+  for (const key of ["habits", "habitLogs", "dailyGoals", "mockTests", "examDates", "streakReasons"]) {
+    result[key] = mergeSharedCollection(base[key], local[key], remote[key]);
+  }
+  return result;
+}
+
+function mergeLegacySharedPayload(local: SharedRecord, remote: SharedRecord): SharedRecord {
+  // Old website versions send full snapshots without a base version. Keep their
+  // established replace semantics for ordinary collections, but make habit
+  // archives sticky so an already-open old tab cannot reactivate a habit.
+  const result: SharedRecord = { ...local };
+  result.habits = mergeSharedCollection([], local.habits, remote.habits);
+
+  const archivedHabitIds = new Set(
+    (Array.isArray(remote.habits) ? remote.habits : [])
+      .filter(isRecord)
+      .filter((habit) => typeof habit.archived_at === "string" && typeof habit.id === "string")
+      .map((habit) => habit.id),
+  );
+  const localLogs = Array.isArray(local.habitLogs) ? local.habitLogs.filter(isRecord) : [];
+  const localLogIds = new Set(localLogs.map((log) => log.id));
+  const historicalArchivedLogs = (
+    Array.isArray(remote.habitLogs) ? remote.habitLogs : []
+  ).filter((log) => isRecord(log) && archivedHabitIds.has(log.habit_id) && !localLogIds.has(log.id));
+  result.habitLogs = [...localLogs, ...historicalArchivedLogs];
+  return result;
+}
+
 Deno.serve(async (req: Request) => {
   const origin = req.headers.get("origin");
   if (origin && origin !== allowedOrigin) return json({ error: "Origin not allowed" }, 403);
@@ -108,19 +216,67 @@ Deno.serve(async (req: Request) => {
   }
 
   if (body.action === "save") {
-    if (!body.payload || typeof body.payload !== "object" || Array.isArray(body.payload)) {
+    if (!isRecord(body.payload)) {
       return json({ error: "Payload must be a JSON object" }, 400);
     }
     const serialized = JSON.stringify(body.payload);
     if (serialized.length > 1_000_000) return json({ error: "Payload is too large" }, 413);
-    const savedAt = new Date().toISOString();
-    const { error } = await supabase.from("officers_goal_state").upsert({
-      id: 1,
-      payload: body.payload,
-      updated_at: savedAt,
-    }, { onConflict: "id" });
-    if (error) return json({ error: "Could not save shared data" }, 500);
-    return json({ saved: true, updated_at: savedAt });
+
+    const submittedPayload = body.payload as SharedRecord;
+    const basePayload = isRecord(body.base_payload) ? body.base_payload : {};
+    const hasVersionedBase = typeof body.base_updated_at === "string" && isRecord(body.base_payload);
+
+    // Compare-and-swap prevents two devices from silently overwriting each other.
+    // On a conflict, reload the newest row, three-way merge by record ID, and retry.
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const { data: current, error: readError } = await supabase
+        .from("officers_goal_state")
+        .select("payload, updated_at")
+        .eq("id", 1)
+        .maybeSingle();
+      if (readError) return json({ error: "Could not load shared data before saving" }, 500);
+
+      const currentPayload = isRecord(current?.payload) ? current.payload : {};
+      const mergedPayload = current
+        ? (hasVersionedBase
+          ? mergeSharedPayload(basePayload, submittedPayload, currentPayload)
+          : mergeLegacySharedPayload(submittedPayload, currentPayload))
+        : submittedPayload;
+
+      const mergedSerialized = JSON.stringify(mergedPayload);
+      if (mergedSerialized.length > 1_000_000) return json({ error: "Merged payload is too large" }, 413);
+
+      const previousTime = current?.updated_at ? Date.parse(current.updated_at) : 0;
+      const savedAt = new Date(Math.max(Date.now(), previousTime + 1)).toISOString();
+
+      if (current) {
+        let updateQuery = supabase
+          .from("officers_goal_state")
+          .update({ payload: mergedPayload, updated_at: savedAt })
+          .eq("id", 1);
+        updateQuery = current.updated_at
+          ? updateQuery.eq("updated_at", current.updated_at)
+          : updateQuery.is("updated_at", null);
+
+        const { data: updated, error: updateError } = await updateQuery
+          .select("updated_at")
+          .maybeSingle();
+        if (updateError) return json({ error: "Could not save shared data" }, 500);
+        if (updated) return json({ saved: true, updated_at: savedAt, payload: mergedPayload });
+      } else {
+        const { data: inserted, error: insertError } = await supabase
+          .from("officers_goal_state")
+          .insert({ id: 1, payload: mergedPayload, updated_at: savedAt })
+          .select("updated_at")
+          .maybeSingle();
+        if (inserted) return json({ saved: true, updated_at: savedAt, payload: mergedPayload });
+        if (insertError && insertError.code !== "23505") {
+          return json({ error: "Could not create shared data" }, 500);
+        }
+      }
+    }
+
+    return json({ error: "Shared data changed repeatedly; sync again before saving" }, 409);
   }
 
   if (body.action === "logout") {
